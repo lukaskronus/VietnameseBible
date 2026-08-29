@@ -1,0 +1,1188 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Kinh Thánh Tiếng Việt - Mỗi ngày một đoạn</title>
+  <!-- Google Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@600;700&family=Literata:ital,opsz,wght@0,7..72,400;0,7..72,500;0,7..72,600;1,7..72,400&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+  
+  <style>
+    :root {
+      --bg-color: #fcfbf9;
+      --card-bg: #ffffff;
+      --text-main: #242424;
+      --text-muted: #666666;
+      --accent: #8b5a2b;
+      --accent-hover: #704720;
+      --accent-light: #f5eee6;
+      --border-color: #e8e2d9;
+      --heading-color: #1a1a1a;
+      --verse-num: #9c7b5c;
+      --shadow: 0 4px 20px rgba(0, 0, 0, 0.05);
+      --font-reading: 'Literata', Georgia, serif;
+      --font-ui: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, sans-serif;
+      --content-width: 780px;
+    }
+
+    [data-theme="dark"] {
+      --bg-color: #121316;
+      --card-bg: #1a1c22;
+      --text-main: #dcdcdc;
+      --text-muted: #8e929b;
+      --accent: #c49a6c;
+      --accent-hover: #ddb282;
+      --accent-light: #282420;
+      --border-color: #2b2e38;
+      --heading-color: #f0f0f0;
+      --verse-num: #ab8d6e;
+      --shadow: 0 4px 20px rgba(0, 0, 0, 0.4);
+    }
+
+    [data-theme="sepia"] {
+      --bg-color: #f4ecd8;
+      --card-bg: #faf4e6;
+      --text-main: #3d332a;
+      --text-muted: #736555;
+      --accent: #82542a;
+      --accent-hover: #6a4320;
+      --accent-light: #eeddc3;
+      --border-color: #e0d2bc;
+      --heading-color: #2b231c;
+      --verse-num: #8e6843;
+      --shadow: 0 4px 20px rgba(100, 70, 30, 0.08);
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      background-color: var(--bg-color);
+      color: var(--text-main);
+      font-family: var(--font-ui);
+      line-height: 1.6;
+      transition: background-color 0.25s ease, color 0.25s ease;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+
+    /* Header Navigation */
+    header {
+      position: sticky;
+      top: 0;
+      z-index: 100;
+      background: var(--card-bg);
+      border-bottom: 1px solid var(--border-color);
+      box-shadow: var(--shadow);
+    }
+
+    .header-container {
+      max-width: 1100px;
+      margin: 0 auto;
+      padding: 0.75rem 1.25rem;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 1rem;
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 0.6rem;
+      cursor: pointer;
+      text-decoration: none;
+      color: var(--heading-color);
+    }
+
+    .brand-icon {
+      font-size: 1.5rem;
+      color: var(--accent);
+    }
+
+    .brand-title {
+      font-family: 'Cinzel', serif;
+      font-weight: 700;
+      font-size: 1.2rem;
+      letter-spacing: 0.5px;
+    }
+
+    .nav-actions {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      flex-wrap: wrap;
+    }
+
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.4rem;
+      padding: 0.45rem 0.85rem;
+      font-size: 0.875rem;
+      font-weight: 600;
+      border-radius: 8px;
+      border: 1px solid var(--border-color);
+      background: var(--card-bg);
+      color: var(--text-main);
+      cursor: pointer;
+      transition: all 0.15s ease;
+      font-family: var(--font-ui);
+    }
+
+    .btn:hover {
+      background: var(--accent-light);
+      border-color: var(--accent);
+      color: var(--accent);
+    }
+
+    .btn-primary {
+      background: var(--accent);
+      color: #ffffff !important;
+      border-color: var(--accent);
+    }
+
+    .btn-primary:hover {
+      background: var(--accent-hover);
+    }
+
+    .btn-icon {
+      padding: 0.45rem 0.65rem;
+    }
+
+    /* Main Container */
+    main {
+      flex: 1;
+      max-width: var(--content-width);
+      width: 100%;
+      margin: 2rem auto;
+      padding: 0 1.25rem 4rem;
+    }
+
+    /* Today Banner */
+    .today-badge-wrapper {
+      margin-bottom: 1.5rem;
+      display: flex;
+      justify-content: center;
+    }
+
+    .today-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+      padding: 0.35rem 0.9rem;
+      background: var(--accent-light);
+      color: var(--accent);
+      border-radius: 20px;
+      font-size: 0.85rem;
+      font-weight: 600;
+      border: 1px solid var(--accent);
+    }
+
+    /* Chapter Card */
+    .reader-card {
+      background: var(--card-bg);
+      border: 1px solid var(--border-color);
+      border-radius: 16px;
+      padding: 2.5rem 3rem;
+      box-shadow: var(--shadow);
+    }
+
+    @media (max-width: 640px) {
+      .reader-card {
+        padding: 1.5rem 1.25rem;
+        border-radius: 12px;
+      }
+    }
+
+    .chapter-header {
+      text-align: center;
+      margin-bottom: 2rem;
+      padding-bottom: 1.5rem;
+      border-bottom: 1px dashed var(--border-color);
+    }
+
+    .chapter-book-meta {
+      font-size: 0.9rem;
+      text-transform: uppercase;
+      letter-spacing: 1.5px;
+      color: var(--text-muted);
+      font-weight: 600;
+      margin-bottom: 0.4rem;
+    }
+
+    .chapter-title {
+      font-family: 'Cinzel', serif;
+      font-size: 2.2rem;
+      font-weight: 700;
+      color: var(--heading-color);
+      margin-bottom: 0.5rem;
+    }
+
+    /* Bible Content Typography */
+    .bible-content {
+      font-family: var(--font-reading);
+      font-size: 1.15rem;
+      line-height: 1.85;
+      color: var(--text-main);
+    }
+
+    .section-heading {
+      font-family: var(--font-ui);
+      font-size: 1.08rem;
+      font-weight: 700;
+      color: var(--accent);
+      margin: 1.8rem 0 0.8rem;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+
+    .section-heading::before {
+      content: "✦";
+      font-size: 0.8rem;
+    }
+
+    .bible-footnote {
+      font-size: 0.82em;
+      color: var(--text-muted);
+      font-style: italic;
+      padding: 0 4px;
+      opacity: 0.85;
+      font-family: var(--font-ui);
+    }
+
+    .verse {
+      display: inline;
+      position: relative;
+      padding: 1px 2px;
+      border-radius: 4px;
+      transition: background 0.15s ease;
+      cursor: pointer;
+    }
+
+    .verse:hover {
+      background: var(--accent-light);
+    }
+
+    .verse.selected {
+      background: rgba(139, 90, 43, 0.22);
+      outline: 1px solid var(--accent);
+    }
+
+    .verse-num {
+      display: inline-block;
+      font-family: var(--font-ui);
+      font-weight: 700;
+      font-size: 0.75em;
+      color: var(--verse-num);
+      vertical-align: baseline;
+      position: relative;
+      top: -0.4em;
+      margin-right: 0.25rem;
+      user-select: none;
+    }
+
+    .verse-p {
+      margin-bottom: 1rem;
+    }
+
+    /* Chapter Navigation Bar */
+    .chapter-nav {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 1rem;
+      margin-top: 2.5rem;
+      padding-top: 1.5rem;
+      border-top: 1px solid var(--border-color);
+    }
+
+    /* Floating Verse Action Menu */
+    .verse-action-bar {
+      position: fixed;
+      bottom: 2rem;
+      left: 50%;
+      transform: translateX(-50%) translateY(100px);
+      background: var(--card-bg);
+      border: 1px solid var(--accent);
+      padding: 0.6rem 1.2rem;
+      border-radius: 30px;
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.25);
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+      z-index: 200;
+      opacity: 0;
+      transition: all 0.25s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    }
+
+    .verse-action-bar.show {
+      transform: translateX(-50%) translateY(0);
+      opacity: 1;
+    }
+
+    /* Modals */
+    .modal-overlay {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: rgba(0, 0, 0, 0.55);
+      backdrop-filter: blur(3px);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 1000;
+      opacity: 0;
+      visibility: hidden;
+      transition: all 0.2s ease;
+      padding: 1rem;
+    }
+
+    .modal-overlay.active {
+      opacity: 1;
+      visibility: visible;
+    }
+
+    .modal {
+      background: var(--card-bg);
+      border: 1px solid var(--border-color);
+      border-radius: 16px;
+      max-width: 680px;
+      width: 100%;
+      max-height: 85vh;
+      display: flex;
+      flex-direction: column;
+      box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
+      transform: translateY(20px);
+      transition: transform 0.2s ease;
+    }
+
+    .modal-overlay.active .modal {
+      transform: translateY(0);
+    }
+
+    .modal-header {
+      padding: 1.25rem 1.5rem;
+      border-bottom: 1px solid var(--border-color);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .modal-title {
+      font-size: 1.2rem;
+      font-weight: 700;
+      color: var(--heading-color);
+    }
+
+    .modal-close {
+      background: transparent;
+      border: none;
+      font-size: 1.5rem;
+      color: var(--text-muted);
+      cursor: pointer;
+      line-height: 1;
+    }
+
+    .modal-body {
+      padding: 1.5rem;
+      overflow-y: auto;
+    }
+
+    /* Book Picker Tabs */
+    .tab-group {
+      display: flex;
+      gap: 0.5rem;
+      margin-bottom: 1.25rem;
+      border-bottom: 1px solid var(--border-color);
+      padding-bottom: 0.5rem;
+    }
+
+    .tab-btn {
+      padding: 0.4rem 1rem;
+      border-radius: 6px;
+      border: none;
+      background: transparent;
+      color: var(--text-muted);
+      font-weight: 600;
+      cursor: pointer;
+    }
+
+    .tab-btn.active {
+      background: var(--accent-light);
+      color: var(--accent);
+    }
+
+    .books-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
+      gap: 0.5rem;
+    }
+
+    .book-item {
+      padding: 0.6rem 0.75rem;
+      border-radius: 8px;
+      border: 1px solid var(--border-color);
+      text-align: center;
+      cursor: pointer;
+      font-size: 0.875rem;
+      font-weight: 500;
+      transition: all 0.15s ease;
+      background: var(--card-bg);
+      color: var(--text-main);
+    }
+
+    .book-item:hover, .book-item.selected {
+      border-color: var(--accent);
+      background: var(--accent-light);
+      color: var(--accent);
+    }
+
+    .chapters-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(44px, 1fr));
+      gap: 0.5rem;
+      margin-top: 1rem;
+    }
+
+    .chapter-box {
+      height: 44px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border-radius: 8px;
+      border: 1px solid var(--border-color);
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.15s ease;
+      background: var(--card-bg);
+      color: var(--text-main);
+    }
+
+    .chapter-box:hover, .chapter-box.current {
+      background: var(--accent);
+      color: #ffffff;
+      border-color: var(--accent);
+    }
+
+    /* Search Modal */
+    .search-box {
+      width: 100%;
+      padding: 0.75rem 1rem;
+      border-radius: 10px;
+      border: 1px solid var(--border-color);
+      background: var(--bg-color);
+      color: var(--text-main);
+      font-size: 1rem;
+      margin-bottom: 1rem;
+      outline: none;
+    }
+
+    .search-box:focus {
+      border-color: var(--accent);
+    }
+
+    .search-results {
+      max-height: 55vh;
+      overflow-y: auto;
+      display: flex;
+      flex-direction: column;
+      gap: 0.75rem;
+    }
+
+    .search-item {
+      padding: 1rem;
+      border-radius: 8px;
+      border: 1px solid var(--border-color);
+      cursor: pointer;
+      transition: all 0.15s ease;
+    }
+
+    .search-item:hover {
+      border-color: var(--accent);
+      background: var(--accent-light);
+    }
+
+    .search-item-title {
+      font-weight: 700;
+      color: var(--accent);
+      margin-bottom: 0.3rem;
+    }
+
+    .search-item-snippet {
+      font-size: 0.9rem;
+      color: var(--text-muted);
+      line-height: 1.5;
+    }
+
+    /* Settings Panel */
+    .setting-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0.8rem 0;
+      border-bottom: 1px solid var(--border-color);
+    }
+
+    .setting-row:last-child {
+      border-bottom: none;
+    }
+
+    .setting-label {
+      font-weight: 600;
+      color: var(--text-main);
+    }
+
+    .setting-ctrls {
+      display: flex;
+      gap: 0.5rem;
+    }
+
+    /* Toast Notification */
+    .toast {
+      position: fixed;
+      top: 1.5rem;
+      left: 50%;
+      transform: translateX(-50%) translateY(-50px);
+      background: #1e1e1e;
+      color: #fff;
+      padding: 0.6rem 1.25rem;
+      border-radius: 20px;
+      font-size: 0.875rem;
+      font-weight: 500;
+      box-shadow: 0 4px 15px rgba(0,0,0,0.3);
+      z-index: 2000;
+      opacity: 0;
+      transition: all 0.25s ease;
+    }
+
+    .toast.show {
+      transform: translateX(-50%) translateY(0);
+      opacity: 1;
+    }
+
+    /* Keyboard hint */
+    .kbd {
+      display: inline-block;
+      padding: 2px 6px;
+      font-size: 0.75rem;
+      background: var(--border-color);
+      border-radius: 4px;
+      font-family: monospace;
+      color: var(--text-muted);
+    }
+
+    /* Loading indicator */
+    .loading-spinner {
+      text-align: center;
+      padding: 3rem;
+      color: var(--text-muted);
+      font-style: italic;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Top Header -->
+  <header>
+    <div class="header-container">
+      <a class="brand" onclick="loadTodayChapter()">
+        <span class="brand-icon">📖</span>
+        <span class="brand-title">Kinh Thánh</span>
+      </a>
+
+      <div class="nav-actions">
+        <button class="btn btn-primary" onclick="openBookPickerModal()">
+          <span id="nav-current-book">Chọn Sách</span>
+          <span style="font-size: 0.7em;">▼</span>
+        </button>
+
+        <button class="btn" onclick="loadTodayChapter()" title="Đoạn Kinh Thánh hôm nay">
+          ☀️ Hôm nay
+        </button>
+
+        <button class="btn btn-icon" onclick="openSearchModal()" title="Tìm kiếm (Phím S)">
+          🔍
+        </button>
+
+        <button class="btn btn-icon" onclick="loadRandomChapter()" title="Đoạn ngẫu nhiên">
+          🎲
+        </button>
+
+        <button class="btn btn-icon" onclick="openSettingsModal()" title="Cài đặt hiển thị">
+          ⚙️
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <!-- Main Body -->
+  <main>
+    <div class="today-badge-wrapper" id="daily-badge-container" style="display: none;">
+      <div class="today-badge">
+        ✨ Đoạn Kinh Thánh của ngày hôm nay (ID: <span id="daily-id-label"></span>)
+      </div>
+    </div>
+
+    <div class="reader-card">
+      <div id="loading" class="loading-spinner">Đang tải đoạn Kinh Thánh...</div>
+
+      <div id="chapter-view" style="display: none;">
+        <div class="chapter-header">
+          <div class="chapter-book-meta" id="chapter-testament">Cựu Ước</div>
+          <h1 class="chapter-title" id="chapter-title">Sáng Thế Ký 1</h1>
+        </div>
+
+        <div class="bible-content" id="bible-content">
+          <!-- Structured content injected here -->
+        </div>
+
+        <div class="chapter-nav">
+          <button class="btn" id="btn-prev-ch" onclick="prevChapter()">
+            ← Đoạn trước <span class="kbd">←</span>
+          </button>
+          <button class="btn" onclick="openBookPickerModal()">
+            Mục lục
+          </button>
+          <button class="btn" id="btn-next-ch" onclick="nextChapter()">
+            Đoạn sau → <span class="kbd">→</span>
+          </button>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <!-- Floating Verse Action Bar -->
+  <div class="verse-action-bar" id="verse-action-bar">
+    <span id="selected-verse-label" style="font-weight: 600; font-size: 0.9rem; color: var(--accent);"></span>
+    <button class="btn btn-primary" style="padding: 0.35rem 0.75rem;" onclick="copySelectedVerse()">
+      📋 Sao chép câu
+    </button>
+    <button class="btn" style="padding: 0.35rem 0.75rem;" onclick="clearVerseSelection()">
+      ✕ Đóng
+    </button>
+  </div>
+
+  <!-- Book Picker Modal -->
+  <div class="modal-overlay" id="book-modal" onclick="if(event.target===this) closeModals()">
+    <div class="modal">
+      <div class="modal-header">
+        <div class="modal-title" id="picker-modal-title">Chọn Sách & Đoạn</div>
+        <button class="modal-close" onclick="closeModals()">✕</button>
+      </div>
+      <div class="modal-body">
+        <div id="book-selection-step">
+          <div class="tab-group">
+            <button class="tab-btn active" id="tab-ot" onclick="switchTestament('OT')">Cựu Ước (39 Sách)</button>
+            <button class="tab-btn" id="tab-nt" onclick="switchTestament('NT')">Tân Ước (27 Sách)</button>
+          </div>
+          <div class="books-grid" id="books-grid-container">
+            <!-- Books injected here -->
+          </div>
+        </div>
+
+        <div id="chapter-selection-step" style="display: none;">
+          <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 1rem;">
+            <button class="btn" onclick="backToBooksList()">← Trở lại danh sách sách</button>
+            <strong id="selected-book-name" style="color: var(--accent); font-size: 1.1rem;"></strong>
+          </div>
+          <div class="chapters-grid" id="chapters-grid-container">
+            <!-- Chapters injected here -->
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Search Modal -->
+  <div class="modal-overlay" id="search-modal" onclick="if(event.target===this) closeModals()">
+    <div class="modal">
+      <div class="modal-header">
+        <div class="modal-title">🔍 Tìm kiếm Kinh Thánh</div>
+        <button class="modal-close" onclick="closeModals()">✕</button>
+      </div>
+      <div class="modal-body">
+        <input type="text" class="search-box" id="search-input" placeholder="Nhập từ khóa cần tìm (VD: Đức Chúa Trời, yêu thương, bình an...)" />
+        <div id="search-status" style="font-size: 0.85rem; color: var(--text-muted); margin-bottom: 0.5rem;"></div>
+        <div class="search-results" id="search-results-container">
+          <!-- Results injected here -->
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Settings Modal -->
+  <div class="modal-overlay" id="settings-modal" onclick="if(event.target===this) closeModals()">
+    <div class="modal" style="max-width: 480px;">
+      <div class="modal-header">
+        <div class="modal-title">⚙️ Cài đặt giao diện</div>
+        <button class="modal-close" onclick="closeModals()">✕</button>
+      </div>
+      <div class="modal-body">
+        <div class="setting-row">
+          <div class="setting-label">Chế độ hiển thị</div>
+          <div class="setting-ctrls">
+            <button class="btn" onclick="setTheme('light')">☀️ Sáng</button>
+            <button class="btn" onclick="setTheme('sepia')">📜 Giấy cũ</button>
+            <button class="btn" onclick="setTheme('dark')">🌙 Tối</button>
+          </div>
+        </div>
+
+        <div class="setting-row">
+          <div class="setting-label">Cỡ chữ đọc</div>
+          <div class="setting-ctrls">
+            <button class="btn" onclick="adjustFontSize(-1)">A-</button>
+            <span id="font-size-label" style="line-height: 32px; font-weight: 600; padding: 0 4px;">18px</span>
+            <button class="btn" onclick="adjustFontSize(1)">A+</button>
+          </div>
+        </div>
+
+        <div class="setting-row">
+          <div class="setting-label">Kiểu phông chữ</div>
+          <div class="setting-ctrls">
+            <button class="btn" onclick="setFontFamily('serif')">Serif (Có chân)</button>
+            <button class="btn" onclick="setFontFamily('sans')">Sans (Không chân)</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Toast Notification -->
+  <div class="toast" id="toast"></div>
+
+  <script>
+    // State
+    let currentChapter = null;
+    let allBooks = [];
+    let currentTestament = 'OT';
+    let selectedBookForChapters = null;
+    let selectedVerse = null;
+    let currentFontSize = parseInt(localStorage.getItem('bible_font_size')) || 18;
+    let currentTheme = localStorage.getItem('bible_theme') || 'light';
+    let currentFontFamily = localStorage.getItem('bible_font_family') || 'serif';
+    let searchDebounceTimer = null;
+    let todayDailyId = null;
+
+    // Initialize
+    document.addEventListener('DOMContentLoaded', async () => {
+      applyTheme(currentTheme);
+      applyFontSize(currentFontSize);
+      applyFontFamily(currentFontFamily);
+      
+      await loadBooks();
+      
+      // Check URL parameters or load today
+      const urlParams = new URLSearchParams(window.location.search);
+      const urlId = urlParams.get('id');
+      const urlBook = urlParams.get('book');
+      const urlChapter = urlParams.get('chapter');
+
+      if (urlId) {
+        loadChapterById(urlId);
+      } else if (urlBook && urlChapter) {
+        loadChapterByBookAndNum(urlBook, urlChapter);
+      } else {
+        loadTodayChapter();
+      }
+
+      setupKeyboardShortcuts();
+      setupSearchInput();
+    });
+
+    // Theme & Font Settings
+    function applyTheme(theme) {
+      document.documentElement.setAttribute('data-theme', theme);
+      localStorage.setItem('bible_theme', theme);
+    }
+    function setTheme(theme) {
+      applyTheme(theme);
+      showToast(`Đã đổi sang chế độ: ${theme === 'dark' ? 'Ban đêm' : theme === 'sepia' ? 'Giấy cũ' : 'Ban ngày'}`);
+    }
+
+    function applyFontSize(size) {
+      currentFontSize = Math.max(14, Math.min(32, size));
+      document.documentElement.style.setProperty('--font-reading-size', `${currentFontSize}px`);
+      const bibleContent = document.getElementById('bible-content');
+      if (bibleContent) {
+        bibleContent.style.fontSize = `${currentFontSize}px`;
+      }
+      document.getElementById('font-size-label').textContent = `${currentFontSize}px`;
+      localStorage.setItem('bible_font_size', currentFontSize);
+    }
+    function adjustFontSize(delta) {
+      applyFontSize(currentFontSize + delta * 2);
+    }
+
+    function applyFontFamily(family) {
+      if (family === 'sans') {
+        document.documentElement.style.setProperty('--font-reading', "var(--font-ui)");
+      } else {
+        document.documentElement.style.setProperty('--font-reading', "'Literata', Georgia, serif");
+      }
+      localStorage.setItem('bible_font_family', family);
+    }
+    function setFontFamily(family) {
+      applyFontFamily(family);
+      showToast(`Đã áp dụng phông chữ ${family.toUpperCase()}`);
+    }
+
+    // API Calls
+    async function loadBooks() {
+      try {
+        const res = await fetch('/api/books');
+        const data = await res.json();
+        if (data.success) {
+          allBooks = data.books;
+          renderBooksGrid();
+        }
+      } catch (err) {
+        console.error('Error fetching books:', err);
+      }
+    }
+
+    async function loadTodayChapter() {
+      setLoading(true);
+      try {
+        const res = await fetch('/api/today');
+        const data = await res.json();
+        if (data.success) {
+          todayDailyId = data.daily_id;
+          renderChapter(data.chapter, true);
+        }
+      } catch (err) {
+        showToast('Lỗi tải đoạn hôm nay');
+      } finally {
+        setLoading(false);
+      }
+    }
+
+    async function loadChapterById(id) {
+      setLoading(true);
+      try {
+        const res = await fetch(`/api/chapter?id=${id}`);
+        const data = await res.json();
+        if (data.success) {
+          renderChapter(data.chapter, data.chapter.id === todayDailyId);
+        }
+      } catch (err) {
+        showToast('Không tìm thấy đoạn');
+      } finally {
+        setLoading(false);
+      }
+    }
+
+    async function loadChapterByBookAndNum(book, chapter) {
+      setLoading(true);
+      try {
+        const res = await fetch(`/api/chapter?book=${encodeURIComponent(book)}&chapter=${chapter}`);
+        const data = await res.json();
+        if (data.success) {
+          renderChapter(data.chapter, data.chapter.id === todayDailyId);
+        }
+      } catch (err) {
+        showToast('Không tìm thấy đoạn');
+      } finally {
+        setLoading(false);
+      }
+    }
+
+    async function loadRandomChapter() {
+      setLoading(true);
+      try {
+        const res = await fetch('/api/random');
+        const data = await res.json();
+        if (data.success) {
+          renderChapter(data.chapter, false);
+          showToast(`Đoạn ngẫu nhiên: ${data.chapter.title}`);
+        }
+      } catch (err) {
+        showToast('Lỗi tải ngẫu nhiên');
+      } finally {
+        setLoading(false);
+      }
+    }
+
+    function renderChapter(ch, isDaily = false) {
+      currentChapter = ch;
+      clearVerseSelection();
+
+      // Update URL
+      const url = new URL(window.location);
+      url.searchParams.set('id', ch.id);
+      window.history.pushState({}, '', url);
+
+      // Update titles
+      document.title = `${ch.title} - Kinh Thánh Tiếng Việt`;
+      document.getElementById('nav-current-book').textContent = ch.title;
+      document.getElementById('chapter-title').textContent = ch.title;
+      
+      const bookObj = allBooks.find(b => b.id === ch.book_id);
+      const isOT = bookObj ? bookObj.testament === 'OT' : ch.book_id <= 39;
+      document.getElementById('chapter-testament').textContent = isOT ? 'Cựu Ước' : 'Tân Ước';
+
+      // Daily badge
+      const dailyBadge = document.getElementById('daily-badge-container');
+      if (isDaily) {
+        document.getElementById('daily-id-label').textContent = ch.id;
+        dailyBadge.style.display = 'flex';
+      } else {
+        dailyBadge.style.display = 'none';
+      }
+
+      // Render content
+      const container = document.getElementById('bible-content');
+      container.innerHTML = '';
+
+      let currentParagraph = document.createElement('p');
+      currentParagraph.className = 'verse-p';
+
+      ch.structured.forEach(item => {
+        if (item.type === 'heading') {
+          if (currentParagraph.childNodes.length > 0) {
+            container.appendChild(currentParagraph);
+            currentParagraph = document.createElement('p');
+            currentParagraph.className = 'verse-p';
+          }
+          const h = document.createElement('div');
+          h.className = 'section-heading';
+          h.textContent = item.text;
+          container.appendChild(h);
+        } else if (item.type === 'verse') {
+          const span = document.createElement('span');
+          span.className = 'verse';
+          span.dataset.verseNum = item.number;
+          span.dataset.verseText = item.text;
+          
+          // Format footnote tags like [†] ... nicely
+          const formattedText = item.text.replace(/(\[†\][^<]+)/g, '<span class="bible-footnote" title="Tham chiếu">$1</span>');
+          span.innerHTML = `<sup class="verse-num">${item.number}</sup>${formattedText} `;
+          span.onclick = () => selectVerse(span, item.number, item.text);
+          currentParagraph.appendChild(span);
+        } else {
+          const span = document.createElement('span');
+          span.textContent = item.text + ' ';
+          currentParagraph.appendChild(span);
+        }
+      });
+
+      if (currentParagraph.childNodes.length > 0) {
+        container.appendChild(currentParagraph);
+      }
+
+      // Navigation button states
+      document.getElementById('btn-prev-ch').disabled = ch.id <= 1;
+      document.getElementById('btn-next-ch').disabled = ch.id >= 1189;
+
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+
+    function setLoading(isLoading) {
+      document.getElementById('loading').style.display = isLoading ? 'block' : 'none';
+      document.getElementById('chapter-view').style.display = isLoading ? 'none' : 'block';
+    }
+
+    function prevChapter() {
+      if (currentChapter && currentChapter.id > 1) {
+        loadChapterById(currentChapter.id - 1);
+      }
+    }
+
+    function nextChapter() {
+      if (currentChapter && currentChapter.id < 1189) {
+        loadChapterById(currentChapter.id + 1);
+      }
+    }
+
+    // Verse Selection
+    function selectVerse(element, number, text) {
+      document.querySelectorAll('.verse.selected').forEach(el => el.classList.remove('selected'));
+      element.classList.add('selected');
+      selectedVerse = {
+        number: number,
+        text: text,
+        reference: `${currentChapter.book_name} ${currentChapter.chapter}:${number}`
+      };
+      
+      const bar = document.getElementById('verse-action-bar');
+      document.getElementById('selected-verse-label').textContent = selectedVerse.reference;
+      bar.classList.add('show');
+    }
+
+    function clearVerseSelection() {
+      document.querySelectorAll('.verse.selected').forEach(el => el.classList.remove('selected'));
+      selectedVerse = null;
+      document.getElementById('verse-action-bar').classList.remove('show');
+    }
+
+    function copySelectedVerse() {
+      if (!selectedVerse) return;
+      const formatted = `"${selectedVerse.text}" (${selectedVerse.reference})`;
+      navigator.clipboard.writeText(formatted).then(() => {
+        showToast(`Đã sao chép: ${selectedVerse.reference}`);
+        clearVerseSelection();
+      });
+    }
+
+    // Book Picker Modal Logic
+    function openBookPickerModal() {
+      document.getElementById('book-modal').classList.add('active');
+      backToBooksList();
+    }
+
+    function switchTestament(t) {
+      currentTestament = t;
+      document.getElementById('tab-ot').classList.toggle('active', t === 'OT');
+      document.getElementById('tab-nt').classList.toggle('active', t === 'NT');
+      renderBooksGrid();
+    }
+
+    function renderBooksGrid() {
+      const container = document.getElementById('books-grid-container');
+      container.innerHTML = '';
+      const filtered = allBooks.filter(b => b.testament === currentTestament);
+
+      filtered.forEach(b => {
+        const div = document.createElement('div');
+        div.className = 'book-item';
+        if (currentChapter && currentChapter.book_id === b.id) {
+          div.classList.add('selected');
+        }
+        div.textContent = b.name;
+        div.onclick = () => selectBookForChapters(b);
+        container.appendChild(div);
+      });
+    }
+
+    function selectBookForChapters(book) {
+      selectedBookForChapters = book;
+      document.getElementById('book-selection-step').style.display = 'none';
+      document.getElementById('chapter-selection-step').style.display = 'block';
+      document.getElementById('selected-book-name').textContent = `${book.name} (${book.total_chapters} đoạn)`;
+
+      const container = document.getElementById('chapters-grid-container');
+      container.innerHTML = '';
+
+      for (let c = 1; c <= book.total_chapters; c++) {
+        const box = document.createElement('div');
+        box.className = 'chapter-box';
+        if (currentChapter && currentChapter.book_id === book.id && currentChapter.chapter === c) {
+          box.classList.add('current');
+        }
+        box.textContent = c;
+        box.onclick = () => {
+          closeModals();
+          loadChapterByBookAndNum(book.code, c);
+        };
+        container.appendChild(box);
+      }
+    }
+
+    function backToBooksList() {
+      document.getElementById('book-selection-step').style.display = 'block';
+      document.getElementById('chapter-selection-step').style.display = 'none';
+      renderBooksGrid();
+    }
+
+    // Search Logic
+    function openSearchModal() {
+      document.getElementById('search-modal').classList.add('active');
+      setTimeout(() => document.getElementById('search-input').focus(), 100);
+    }
+
+    function setupSearchInput() {
+      const input = document.getElementById('search-input');
+      input.addEventListener('input', () => {
+        clearTimeout(searchDebounceTimer);
+        const query = input.value.trim();
+        if (query.length < 2) {
+          document.getElementById('search-results-container').innerHTML = '';
+          document.getElementById('search-status').textContent = 'Nhập ít nhất 2 ký tự...';
+          return;
+        }
+        document.getElementById('search-status').textContent = 'Đang tìm kiếm...';
+        searchDebounceTimer = setTimeout(() => performSearch(query), 300);
+      });
+    }
+
+    async function performSearch(query) {
+      try {
+        const res = await fetch(`/api/search?q=${encodeURIComponent(query)}`);
+        const data = await res.json();
+        const container = document.getElementById('search-results-container');
+        container.innerHTML = '';
+
+        if (!data.results || data.results.length === 0) {
+          document.getElementById('search-status').textContent = `Không tìm thấy kết quả nào cho "${query}"`;
+          return;
+        }
+
+        document.getElementById('search-status').textContent = `Tìm thấy ${data.total} kết quả phù hợp:`;
+        data.results.forEach(r => {
+          const div = document.createElement('div');
+          div.className = 'search-item';
+          div.innerHTML = `
+            <div class="search-item-title">${r.title}</div>
+            <div class="search-item-snippet">${r.snippet}</div>
+          `;
+          div.onclick = () => {
+            closeModals();
+            loadChapterById(r.id);
+          };
+          container.appendChild(div);
+        });
+      } catch (err) {
+        document.getElementById('search-status').textContent = 'Lỗi tìm kiếm';
+      }
+    }
+
+    // Settings Modal
+    function openSettingsModal() {
+      document.getElementById('settings-modal').classList.add('active');
+    }
+
+    function closeModals() {
+      document.querySelectorAll('.modal-overlay').forEach(el => el.classList.remove('active'));
+    }
+
+    // Toast
+    function showToast(msg) {
+      const toast = document.getElementById('toast');
+      toast.textContent = msg;
+      toast.classList.add('show');
+      setTimeout(() => toast.classList.remove('show'), 2500);
+    }
+
+    // Keyboard shortcuts
+    function setupKeyboardShortcuts() {
+      document.addEventListener('keydown', (e) => {
+        if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return;
+        
+        if (e.key === 'ArrowLeft') {
+          prevChapter();
+        } else if (e.key === 'ArrowRight') {
+          nextChapter();
+        } else if (e.key === 'Escape') {
+          closeModals();
+          clearVerseSelection();
+        } else if (e.key.toLowerCase() === 's') {
+          e.preventDefault();
+          openSearchModal();
+        } else if (e.key.toLowerCase() === 't') {
+          e.preventDefault();
+          loadTodayChapter();
+        }
+      });
+    }
+  </script>
+</body>
+</html>
