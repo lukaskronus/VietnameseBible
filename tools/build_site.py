@@ -256,7 +256,7 @@ def main():
                                "index.html"),
                   page(bp, "%s %d | %s" % (book["title"], ch["number"],
                                            SITE_NAME),
-                       "%s %d" % (book["title"], ch["number]),
+                       "%s %d" % (book["title"], ch["number"]),
                        body, ("app.js",)))
             sitemap_urls.append(root + "%s/%d/" % (book["slug"],
                                                       ch["number"]))
