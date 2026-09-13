@@ -66,9 +66,28 @@ header.top .bar{
 }
 .brand{font-weight:700;text-decoration:none;color:var(--fg);font-size:1.05rem;letter-spacing:-.02em;font-family:var(--sans)}
 .brand span{color:var(--acc)}
-nav.main{display:flex;gap:1.25rem}
-nav.main a{color:var(--mut);font-size:.85rem;font-family:var(--sans);font-weight:500;text-decoration:none;transition:color .2s}
-nav.main a:hover{color:var(--acc);text-decoration:none}
+nav.main{display:flex;gap:.25rem;align-items:center}
+nav.main>a,nav.main>.dd{color:var(--mut);font-size:.85rem;font-family:var(--sans);font-weight:500;text-decoration:none;transition:color .2s;padding:.3rem .6rem;border-radius:6px}
+nav.main>a:hover,nav.main>.dd:hover{color:var(--acc);text-decoration:none}
+/* dropdown */
+.dd{position:relative;cursor:pointer}
+.dd::after{content:" \\25BE";font-size:.7em;opacity:.5}
+.dd-menu{
+  display:none;position:absolute;top:calc(100% + .35rem);right:0;
+  background:var(--card);border:1px solid var(--line);border-radius:10px;
+  box-shadow:0 8px 30px rgba(0,0,0,.12);padding:.4rem 0;
+  min-width:20rem;max-height:70vh;overflow-y:auto;z-index:200;
+}
+.dd-menu a{
+  display:block;padding:.4rem 1rem;font-family:var(--sans);font-size:.82rem;
+  color:var(--fg2);text-decoration:none;transition:background .12s,color .12s;
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis
+}
+.dd-menu a:hover{background:var(--acc-bg);color:var(--acc);text-decoration:none}
+.dd.open .dd-menu{display:block}
+@media(max-width:640px){
+  .dd-menu{position:fixed;left:.5rem;right:.5rem;top:auto;max-height:60vh;width:auto}
+}
 .controls{display:flex;gap:.3rem;align-items:center}
 .controls button{
   background:none;border:1px solid var(--line);color:var(--mut);
@@ -104,25 +123,6 @@ nav.main a:hover{color:var(--acc);text-decoration:none}
   font-family:var(--sans);font-size:.85rem;font-weight:600;color:var(--acc)
 }
 #daily-link:hover{text-decoration:none}
-
-/* ---- home section titles ---- */
-.section-title{
-  font-family:var(--sans);font-size:1.1rem;font-weight:700;
-  color:var(--fg);margin:2.5rem 0 1rem;padding-bottom:.6rem;
-  border-bottom:2px solid var(--line);letter-spacing:-.01em
-}
-
-/* ---- book grid ---- */
-.books{list-style:none;display:grid;grid-template-columns:repeat(auto-fill,minmax(11rem,1fr));gap:.6rem;margin:0;padding:0}
-.books li a{
-  display:flex;align-items:center;justify-content:space-between;
-  border:1px solid var(--line);border-radius:10px;
-  padding:.7rem 1rem;text-decoration:none;color:var(--fg);
-  background:var(--card);transition:all .2s
-}
-.books li a:hover{border-color:var(--acc);text-decoration:none;box-shadow:var(--shadow)}
-.books li a .t{font-family:var(--sans);font-size:.88rem;font-weight:600;color:var(--fg)}
-.books li a .c{font-family:var(--sans);font-size:.7rem;color:var(--mut);font-weight:500}
 
 /* ---- chapter index ---- */
 .chaps{columns:3;list-style:none;margin:0;padding:0;column-gap:1.5rem}
@@ -219,7 +219,6 @@ footer.site{
   header.top .bar{padding:.5rem 1rem}
   #daily{padding:1.5rem}
   .chaps{columns:2}
-  .books{grid-template-columns:1fr 1fr;gap:.5rem}
   .chapter-meta h1{font-size:1.5rem}
   nav.pn{font-size:.8rem}
 }
@@ -238,6 +237,11 @@ function ktFs(delta){var h=document.documentElement;var cur=parseInt(getComputed
 var fa=ktGet("fs-dec"),fb=ktGet("fs-inc");
 if(fa){fa.onclick=function(){ktFs(-1)}}
 if(fb){fb.onclick=function(){ktFs(1)}}
+document.querySelectorAll(".dd").forEach(function(el){
+el.addEventListener("click",function(e){e.stopPropagation();var wasOpen=el.classList.contains("open");
+document.querySelectorAll(".dd").forEach(function(d){d.classList.remove("open")});
+if(!wasOpen){el.classList.add("open")}})});
+document.addEventListener("click",function(){document.querySelectorAll(".dd").forEach(function(d){d.classList.remove("open")})});
 """
 
 # Must mirror tools/build_db.py fold()/tokenize() exactly.
@@ -282,7 +286,7 @@ def esc(text):
     return html.escape(text or "", quote=True)
 
 
-def page(bp, title, desc, body, scripts=()):
+def page(bp, title, desc, body, scripts=(), nav_extra=""):
     head_extra = "".join(
         ['<script src="%s/assets/%s" defer></script>' % (bp, s)
          for s in scripts])
@@ -294,6 +298,7 @@ def page(bp, title, desc, body, scripts=()):
             "<body>\n<header class=\"top\"><div class=\"bar\">"
             "<a class=\"brand\" href=\"%s/\">Kinh Th<span>e</span>nh Ti\u00eang Vi\u00eat</a>"
             "<nav class=\"main\"><a href=\"%s/\">Trang ch&#7911;</a>"
+            "%s"
             "<a href=\"%s/tim-kiem/\">T&igrave;m ki&#7871;m</a></nav>"
             "<span class=\"controls\">"
             "<button id=\"fs-dec\" title=\"Ch&#7919; nh&#7887;\">A-</button>"
@@ -304,7 +309,7 @@ def page(bp, title, desc, body, scripts=()):
             "<footer class=\"site\"><div class=\"wrap\">%s</div></footer>\n"
             "</body>\n</html>\n"
             % (bp, esc(desc), esc(title), bp, EARLY_SCRIPT, head_extra,
-               bp, esc(SITE_NAME), bp, bp, body, esc(SITE_NAME)))
+               bp, esc(SITE_NAME), nav_extra, bp, body, esc(SITE_NAME)))
 
 
 def write(path, content):
@@ -352,6 +357,19 @@ def main():
             idmap.append({"slug": book["slug"], "n": ch["number"],
                           "book": book["title"]})
     total = len(idmap)
+
+    # ---- nav dropdown HTML ------------------------------------------------
+    def dd_menu(items):
+        links = "".join(
+            "<a href=\"%s/%s/\">%s</a>" % (bp, b["slug"], esc(b["title"]))
+            for b in sorted(items, key=lambda b: b["position"]))
+        return '<div class="dd-menu">%s</div>' % links
+
+    ot_books = [b for b in books if b["testament"] == "OT"]
+    nt_books = [b for b in books if b["testament"] != "OT"]
+    nav_dd = ("<div class=\"dd\">C\u1ef1u \u01af\u1edbc%s</div>"
+              "<div class=\"dd\">T\u00e2n \u01af\u1edbc%s</div>"
+              % (dd_menu(ot_books), dd_menu(nt_books)))
 
     def url_of(cid):
         c = idmap[cid - 1]
@@ -426,7 +444,7 @@ def main():
                   page(bp, "%s %d | %s" % (book["title"], ch["number"],
                                            SITE_NAME),
                        "%s %d" % (book["title"], ch["number"]),
-                       body, ("app.js",)))
+                       body, ("app.js",), nav_dd))
             sitemap_urls.append(root + "%s/%d/" % (book["slug"],
                                                       ch["number"]))
             write(os.path.join(out, "data", "ch", str(cid) + ".json"),
@@ -451,19 +469,10 @@ def main():
                 % (bp, esc(SITE_NAME), esc(book["title"]), sub, lis))
         write(os.path.join(out, book["slug"], "index.html"),
               page(bp, "%s | %s" % (book["title"], SITE_NAME),
-                   book["title"], body, ("app.js",)))
+                   book["title"], body, ("app.js",), nav_dd))
         sitemap_urls.append(root + book["slug"] + "/")
 
     # ---- home -------------------------------------------------------------
-    ot = [b for b in books if b["testament"] == "OT"]
-    nt = [b for b in books if b["testament"] != "OT"]
-
-    def grid(items):
-        return ("<ul class=\"books\">" + "".join(
-            "<li><a href=\"%s/%s/\">%s <span>%d \u0111o\u1ea1n</span></a></li>"
-            % (bp, b["slug"], esc(b["title"]), len(b["chapters"]))
-            for b in sorted(items, key=lambda b: b["position"])) + "</ul>")
-
     home = ("<section id=\"daily\"><p class=\"kicker\">"
             "\u0110o\u1ea1n Kinh Th\u00e1nh h\u00f4m nay</p>\n"
             "<h2 id=\"daily-title\">\u2026</h2>\n"
@@ -471,13 +480,11 @@ def main():
             "<p><a id=\"daily-link\" href=\"#\">"
             "\u0110\u1ecdc c\u1ea3 \u0111o\u1ea1n &#8594;</a></p>\n"
             "<noscript><p><a href=\"%s/sang-the-ky/1/\">"
-            "S\u00e1ng Th\u1ebf k\u00fd 1</a></p></noscript></section>\n"
-            "<h2 class=\"section-title\">C\u1ef1u \u01af\u1edbc</h2>\n%s\n"
-            "<h2 class=\"section-title\">T\u00e2n \u01af\u1edbc</h2>\n%s"
-            % (bp, grid(ot), grid(nt)))
+            "S\u00e1ng Th\u1ebf k\u00fd 1</a></p></noscript></section>"
+            % bp)
     write(os.path.join(out, "index.html"),
           page(bp, SITE_NAME, "Kinh Th\xe1nh Ti\xeang Vi\xeat online",
-               home, ("app.js", "daily.js")))
+               home, ("app.js", "daily.js"), nav_dd))
 
     # ---- search -----------------------------------------------------------
     search_body = ("<div class=\"chapter-meta\"><h1>T&igrave;m ki&#7871;m</h1></div>\n"
@@ -489,7 +496,7 @@ def main():
     write(os.path.join(out, "tim-kiem", "index.html"),
           page(bp, "T\u00ecm ki\u1ebfm | %s" % SITE_NAME,
                "T\u00ecm ki\u1ebfm Kinh Th\u00e1nh", search_body,
-               ("app.js", "search.js")))
+               ("app.js", "search.js"), nav_dd))
 
     # ---- sitemap / robots / 404 -------------------------------------------
     today = datetime.now(timezone.utc).strftime("%Y-%m-%d")
@@ -506,7 +513,7 @@ def main():
           page(bp, "Kh\u00f4ng t\u00ecm th\u1ea5y | %s" % SITE_NAME, "",
                "<h1>404</h1><p>Trang b\u1ea1n t\u00ecm kh\u00f4ng t\u1ed3n "
                "t\u1ea1i. <a href=\"%s/\">V\u1ec1 trang ch\u1ee7</a>.</p>" % bp,
-               ("app.js",)))
+               ("app.js",), nav_dd))
 
     n_files = sum(len(fs) for _, _, fs in os.walk(out))
     print("books=%d chapters=%d files=%d" % (len(books), total, n_files))
