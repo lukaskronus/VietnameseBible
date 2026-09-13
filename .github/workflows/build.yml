@@ -1,13 +1,16 @@
 # Phase 1: parse data/*.txt -> build/bible.json + build/validation_report.md
 # Phase 2: build_db (bible.json -> bible.sqlite + search_index.json)
+# Phase 3: build_site (bible.json + search_index.json -> static site/)
+# Phase 4 (deploy) is manual: download the `site` artifact and publish
+# it to any static host (Netlify, Vercel, DO App Platform, ...).
 #
 # All execution happens on GitHub-hosted runners; local machines are
-# code storage only (no builds there). Later phases extend this workflow:
-#   Phase 3: build_site (bible.json -> static site/)
-#   Phase 4: deploy     (publish site/ to the chosen static host)
+# code storage only (no builds there).
 #
 # Action pins are Node 24-native majors (checkout v5, setup-python v6,
-# upload/download-artifact v6) to avoid the Node 20 deprecation warning.
+# upload-artifact v6, download-artifact v7) to avoid the Node 20
+# deprecation warning. NOTE: download-artifact needed v7 -- v6 still
+# targets node20 and triggers the warning.
 name: build
 
 on:
@@ -66,7 +69,7 @@ jobs:
           python-version: "3.12"
 
       - name: Download Phase 1 artifacts
-        uses: actions/download-artifact@v6
+        uses: actions/download-artifact@v7
         with:
           name: bible-parse
           path: parse-in
@@ -82,4 +85,48 @@ jobs:
           path: |
             build/bible.sqlite
             build/search_index.json
+          retention-days: 30
+
+  build_site:
+    name: Build static site (Phase 3)
+    runs-on: ubuntu-latest
+    needs: [parse, build_db]
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v5
+
+      - name: Set up Python
+        uses: actions/setup-python@v6
+        with:
+          python-version: "3.12"
+
+      - name: Download Phase 1 artifacts
+        uses: actions/download-artifact@v7
+        with:
+          name: bible-parse
+          path: parse-in
+
+      - name: Download Phase 2 artifacts
+        uses: actions/download-artifact@v7
+        with:
+          name: bible-db
+          path: db-in
+
+      - name: Build static site
+        # SITE_BASE_URL is a repo/workflow variable you set before deploying
+        # (used for absolute sitemap.xml URLs only); falls back to a
+        # placeholder if unset. SITE_BASE_PATH is for subpath hosting.
+        run: >
+          python tools/build_site.py
+          --json parse-in/bible.json
+          --index db-in/search_index.json
+          --out site
+          --base-url "${{ vars.SITE_BASE_URL }}"
+          --base-path "${{ vars.SITE_BASE_PATH }}"
+
+      - name: Upload site artifact
+        uses: actions/upload-artifact@v6
+        with:
+          name: site
+          path: site
           retention-days: 30
