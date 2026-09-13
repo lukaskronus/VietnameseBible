@@ -1,0 +1,50 @@
+# Phase 1: parse data/*.txt -> build/bible.json + build/validation_report.md
+#
+# All execution happens on GitHub-hosted runners; local machines are
+# code storage only (no builds there). Later phases extend this workflow:
+#   Phase 2: build_db   (bible.json -> bible.sqlite + search_index.json)
+#   Phase 3: build_site (bible.json -> static site/)
+#   Phase 4: deploy     (publish site/ to the chosen static host)
+name: build
+
+on:
+  push:
+    paths:
+      - "data/**"
+      - "tools/**"
+      - ".github/workflows/build.yml"
+  pull_request:
+    paths:
+      - "data/**"
+      - "tools/**"
+      - ".github/workflows/build.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  parse:
+    name: Parse Bible sources (Phase 1)
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Parse data files
+        # Exit 1 on hard errors (missing/empty books); warnings stay in the report.
+        run: python tools/parse_bible.py --data data --out build
+
+      - name: Upload parsed artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: bible-parse
+          path: |
+            build/bible.json
+            build/validation_report.md
+          retention-days: 30
