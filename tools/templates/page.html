@@ -1,0 +1,29 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="kt-base" content="${bp}">
+<meta name="description" content="${desc}">
+<title>${title}</title>
+<link rel="stylesheet" href="${bp}/assets/style.css">
+<script>try{var t=localStorage.getItem("kt-theme");if(t){document.documentElement.dataset.theme=t}var f=localStorage.getItem("kt-fs");if(f){document.documentElement.style.setProperty("--fs",f+"px")}}catch(e){}</script>
+${head_extra}
+</head>
+<body>
+<header class="top"><div class="bar">
+<a class="brand" href="${bp}/">Kinh Th<span>e</span>nh Ti&#x1EBFng Vi&#x1EC7;t</a>
+<nav class="main"><a href="${bp}/">Trang ch&#7911;</a>
+${nav_extra}
+<a href="${bp}/tim-kiem/">T&#x00EC;m ki&#x1EBF;m</a></nav>
+<span class="controls">
+<button id="fs-dec" title="Ch&#x1EEF; nh&#x1ECF;">A-</button>
+<button id="fs-inc" title="Ch&#x1EEF; l&#x1ED1;n">A+</button>
+<button id="theme-btn" title="Ng&#x1EA7;y/ng&#x00E0;y">&#x25E1;</button>
+</span></div></header>
+<main class="wrap">
+${body}
+</main>
+<footer class="site"><div class="wrap">${site_name}</div></footer>
+</body>
+</html>

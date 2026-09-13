@@ -7,7 +7,7 @@ Stdlib only.
         --base-url https://example.com/ [--base-path ""]
 
 Inputs: Phase 1 bible.json (text + order), Phase 2 search_index.json.
-Output: complete static site/ -- upload it to any static host as-is.
+Output: complete static site/ and site.zip -- upload to any static host.
 
 URL scheme: / = home (verse of the day + book grid),
 /<slug>/ = book, /<slug>/<n>/ = chapter, /tim-kiem/ = search.
@@ -23,263 +23,38 @@ import argparse
 import html
 import json
 import os
+import re
 import sys
+import zipfile
 from datetime import datetime, timezone
+from pathlib import Path
+from string import Template
 
 SITE_NAME = "Kinh Th\xe1nh Ti\xeang Vi\xeat"
 
-CSS = """\
-:root{
-  --bg:#fcfcfb;--bg2:#f3f2ee;--fg:#1c1917;--fg2:#44403c;--mut:#a8a29e;
-  --acc:#92400e;--acc2:#78350f;--acc-hover:#b45309;--acc-bg:rgba(146,64,14,.06);
-  --line:#e7e5e4;--card:#ffffff;--shadow:0 1px 3px rgba(0,0,0,.06);
-  --serif:"Noto Serif",Georgia,"Times New Roman",serif;
-  --sans:system-ui,-apple-system,"Segoe UI",sans-serif;
-  --fs:18px;
-}
-html[data-theme="dark"]{
-  --bg:#1a1918;--bg2:#252321;--fg:#f5f0eb;--fg2:#d6cec5;--mut:#78716c;
-  --acc:#fbbf24;--acc2:#f59e0b;--acc-hover:#fcd34d;--acc-bg:rgba(251,191,36,.1);
-  --line:#3a3633;--card:#211f1d;--shadow:0 1px 3px rgba(0,0,0,.2);
-}
-*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
-html{scroll-behavior:smooth;-webkit-text-size-adjust:100%}
-body{
-  background:var(--bg);color:var(--fg);
-  font:var(--fs)/1.9 var(--serif);
-  -webkit-font-smoothing:antialiased;text-rendering:optimizeLegibility;
-  transition:background .3s,color .3s
-}
-a{color:var(--acc);text-decoration:none;transition:color .2s}
-a:hover{color:var(--acc-hover);text-decoration:underline}
-.wrap{max-width:42rem;margin:0 auto;padding:0 1.5rem 5rem}
+TOOLS_DIR = Path(__file__).resolve().parent
+STATIC_DIR = TOOLS_DIR / "static"
+TEMPLATE_DIR = TOOLS_DIR / "templates"
 
-/* ---- header ---- */
-header.top{
-  border-bottom:1px solid var(--line);background:var(--bg);
-  position:sticky;top:0;z-index:100;
-  backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);
-}
-header.top .bar{
-  max-width:42rem;margin:0 auto;padding:.65rem 1.5rem;
-  display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:.5rem
-}
-.brand{font-weight:700;text-decoration:none;color:var(--fg);font-size:1.05rem;letter-spacing:-.02em;font-family:var(--sans)}
-.brand span{color:var(--acc)}
-nav.main{display:flex;gap:.25rem;align-items:center}
-nav.main>a,nav.main>.dd{color:var(--mut);font-size:.85rem;font-family:var(--sans);font-weight:500;text-decoration:none;transition:color .2s;padding:.3rem .6rem;border-radius:6px}
-nav.main>a:hover,nav.main>.dd:hover{color:var(--acc);text-decoration:none}
-/* dropdown */
-.dd{position:relative;cursor:pointer}
-.dd::after{content:" \\25BE";font-size:.7em;opacity:.5}
-.dd-menu{
-  display:none;position:absolute;top:calc(100% + .35rem);right:0;
-  background:var(--card);border:1px solid var(--line);border-radius:10px;
-  box-shadow:0 8px 30px rgba(0,0,0,.12);padding:.4rem 0;
-  min-width:20rem;max-height:70vh;overflow-y:auto;z-index:200;
-}
-.dd-menu a{
-  display:block;padding:.4rem 1rem;font-family:var(--sans);font-size:.82rem;
-  color:var(--fg2);text-decoration:none;transition:background .12s,color .12s;
-  white-space:nowrap;overflow:hidden;text-overflow:ellipsis
-}
-.dd-menu a:hover{background:var(--acc-bg);color:var(--acc);text-decoration:none}
-.dd.open .dd-menu{display:block}
-@media(max-width:640px){
-  .dd-menu{position:fixed;left:.5rem;right:.5rem;top:auto;max-height:60vh;width:auto}
-}
-.controls{display:flex;gap:.3rem;align-items:center}
-.controls button{
-  background:none;border:1px solid var(--line);color:var(--mut);
-  border-radius:6px;padding:.25rem .55rem;cursor:pointer;
-  font-size:.8rem;font-family:var(--sans);transition:all .2s
-}
-.controls button:hover{border-color:var(--acc);color:var(--acc)}
-.controls button:active{transform:scale(.95)}
+PAGE_TPL = Template((TEMPLATE_DIR / "page.html").read_text("utf-8"))
+CSS_SRC = (STATIC_DIR / "style.css").read_text("utf-8")
+APP_JS_SRC = (STATIC_DIR / "app.js").read_text("utf-8")
+SEARCH_JS_SRC = (STATIC_DIR / "search.js").read_text("utf-8")
+DAILY_JS_SRC = (STATIC_DIR / "daily.js").read_text("utf-8")
 
-/* ---- crumbs ---- */
-.crumb{font-size:.8rem;color:var(--mut);font-family:var(--sans);margin-bottom:.5rem}
-.crumb a{color:var(--mut)}
-.crumb a:hover{color:var(--acc)}
 
-/* ---- verse of the day ---- */
-#daily{
-  border:1px solid var(--line);border-radius:12px;
-  padding:2.25rem 2.5rem;margin-bottom:3rem;
-  background:var(--card);box-shadow:var(--shadow)
-}
-#daily .kicker{
-  font-family:var(--sans);font-size:.7rem;font-weight:700;
-  color:var(--acc);letter-spacing:.1em;text-transform:uppercase;margin:0 0 .5rem
-}
-#daily h2#daily-title{
-  font-size:1.4rem;font-weight:700;font-family:var(--sans);
-  color:var(--fg);margin:0 0 1.25rem;letter-spacing:-.01em
-}
-#daily-text{color:var(--fg2);line-height:2}
-#daily-text sup{font-size:.65em;color:var(--acc);font-family:var(--sans);font-weight:600;margin-right:.15em;opacity:.7}
-#daily-link{
-  display:inline-block;margin-top:1.25rem;
-  font-family:var(--sans);font-size:.85rem;font-weight:600;color:var(--acc)
-}
-#daily-link:hover{text-decoration:none}
+def minify_css(s):
+    s = re.sub(r'/\*.*?\*/', '', s, flags=re.S)
+    s = re.sub(r'\s*\n\s*', '\n', s)
+    s = re.sub(r'\n+', '\n', s)
+    return s.strip()
 
-/* ---- chapter index ---- */
-.chaps{columns:3;list-style:none;margin:0;padding:0;column-gap:1.5rem}
-.chaps li a{
-  display:block;padding:.5rem 0;color:var(--fg);
-  font-family:var(--sans);font-size:.9rem;text-decoration:none;
-  border-bottom:1px solid var(--line);transition:color .15s
-}
-.chaps li:last-child a{border-bottom:none}
-.chaps li a:hover{color:var(--acc);text-decoration:none}
 
-/* ---- chapter content: flowing paragraphs ---- */
-.chapter-meta{margin-bottom:2rem}
-.chapter-meta h1{
-  font-size:2rem;font-weight:700;font-family:var(--sans);
-  color:var(--fg);letter-spacing:-.02em;line-height:1.2;margin:0 0 .25rem
-}
-.chapter-meta .sub{color:var(--mut);font-size:.8rem;font-family:var(--sans)}
-h2.sec{
-  font-size:1rem;font-weight:700;font-family:var(--sans);
-  color:var(--acc);letter-spacing:.02em;
-  margin:2.5em 0 .75em;text-transform:uppercase
-}
-p.reading{
-  text-indent:0;margin:0 0 1.25em;line-height:2;
-  text-align:justify;hyphens:auto
-}
-p.reading sup{
-  font-size:.6em;color:var(--acc);font-family:var(--sans);
-  font-weight:600;margin-right:.1em;opacity:.7
-}
-p.reading sup[id]{
-  cursor:pointer;transition:color .15s
-}
-p.reading sup[id]:hover{opacity:1}
-
-/* ---- prev / next navigation ---- */
-nav.pn{
-  display:flex;justify-content:space-between;gap:1rem;
-  margin:3.5rem 0 0;padding-top:1.5rem;border-top:1px solid var(--line);
-  font-family:var(--sans);font-size:.85rem
-}
-nav.pn a{
-  display:inline-flex;align-items:center;gap:.3rem;
-  color:var(--fg2);padding:.4rem .8rem;border:1px solid var(--line);
-  border-radius:8px;transition:all .2s;font-weight:500;text-decoration:none
-}
-nav.pn a:hover{border-color:var(--acc);color:var(--acc);text-decoration:none}
-nav.pn span.empty{visibility:hidden}
-
-/* ---- search ---- */
-form.search{display:flex;gap:.5rem;margin:2rem 0}
-form.search input{
-  flex:1;padding:.75rem 1rem;font-size:1rem;font-family:var(--sans);
-  background:var(--card);color:var(--fg);
-  border:2px solid var(--line);border-radius:10px;
-  transition:border-color .2s;outline:none
-}
-form.search input:focus{border-color:var(--acc)}
-form.search button{
-  padding:.75rem 1.5rem;font-size:.9rem;font-family:var(--sans);font-weight:600;
-  background:var(--acc);color:#fff;border:none;border-radius:10px;
-  cursor:pointer;transition:background .2s
-}
-form.search button:hover{background:var(--acc-hover)}
-#results{margin-top:1.5rem}
-#results p{color:var(--fg2);font-family:var(--sans);font-size:.9rem}
-#results a{
-  display:block;padding:.5rem .75rem;border-radius:6px;
-  transition:background .15s;font-family:var(--sans);font-size:.9rem;
-  color:var(--fg);text-decoration:none
-}
-#results a:hover{background:var(--acc-bg);text-decoration:none}
-
-/* ---- footer ---- */
-footer.site{
-  border-top:1px solid var(--line);margin-top:4rem;
-  padding:1.5rem 0;color:var(--mut);
-  font-size:.75rem;font-family:var(--sans);text-align:center
-}
-
-/* ---- print ---- */
-@media print{
-  header.top,.controls,nav.pn,form.search,.crumb{display:none}
-  .wrap{max-width:none;padding:0}
-  body{font-size:12pt;line-height:1.6}
-  #daily{border:none;box-shadow:none;background:none}
-  p.reading sup{color:var(--fg);opacity:.5}
-}
-
-/* ---- responsive ---- */
-@media (max-width:640px){
-  .wrap{padding:0 1rem 3rem}
-  header.top .bar{padding:.5rem 1rem}
-  #daily{padding:1.5rem}
-  .chaps{columns:2}
-  .chapter-meta h1{font-size:1.5rem}
-  nav.pn{font-size:.8rem}
-}
-"""
-
-# Runs before render to avoid a theme flash. Braces doubled: plain string.
-EARLY_SCRIPT = """\
-<script>try{var t=localStorage.getItem("kt-theme");if(t){document.documentElement.dataset.theme=t}var f=localStorage.getItem("kt-fs");if(f){document.documentElement.style.setProperty("--fs",f+"px")}}catch(e){}</script>"""
-
-APP_JS = """\
-"use strict";
-function ktGet(id){return document.getElementById(id)}
-var themeBtn=ktGet("theme-btn");
-if(themeBtn){themeBtn.onclick=function(){var h=document.documentElement;var next=h.dataset.theme==="dark"?"light":"dark";h.dataset.theme=next;try{localStorage.setItem("kt-theme",next)}catch(e){}};}
-function ktFs(delta){var h=document.documentElement;var cur=parseInt(getComputedStyle(h).getPropertyValue("--fs"))||17;var next=Math.min(24,Math.max(13,cur+delta));h.style.setProperty("--fs",next+"px");try{localStorage.setItem("kt-fs",String(next))}catch(e){}}
-var fa=ktGet("fs-dec"),fb=ktGet("fs-inc");
-if(fa){fa.onclick=function(){ktFs(-1)}}
-if(fb){fb.onclick=function(){ktFs(1)}}
-document.querySelectorAll(".dd").forEach(function(el){
-el.addEventListener("click",function(e){e.stopPropagation();var wasOpen=el.classList.contains("open");
-document.querySelectorAll(".dd").forEach(function(d){d.classList.remove("open")});
-if(!wasOpen){el.classList.add("open")}})});
-document.addEventListener("click",function(){document.querySelectorAll(".dd").forEach(function(d){d.classList.remove("open")})});
-"""
-
-# Must mirror tools/build_db.py fold()/tokenize() exactly.
-SEARCH_JS = """\
-"use strict";
-function fold(s){return s.normalize("NFD").replace(/[\\u0300-\\u036f]/g,"").replace(/\\u0111/g,"d").replace(/\\u0110/g,"D").toLowerCase()}
-function toks(s){var m=s.match(/[a-z0-9]+/g)||[];return m.filter(function(t){return t.length>=2})}
-var IDX=null,CHS=null;
-function esc(s){return s.replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;")}
-function base(){var b=document.querySelector('meta[name="kt-base"]');return b?b.content:""}
-function run(e){if(e){e.preventDefault()}var box=document.getElementById("q");var out=document.getElementById("results");var q=toks(fold(box.value));if(!q.length){out.innerHTML="<p>Vui l\u00f2ng nh\u1eadp \u00edt nh\u1ea5t 2 k\u00fd t\u1ef1.</p>";return}if(!IDX){out.innerHTML="<p>\u0110ang t\u1ea3i d\u1eef li\u1ec7u t\u00ecm ki\u1ebfm\u2026</p>";return}
-var hit=null;for(var i=0;i<q.length;i++){var ids=IDX.index[q[i]]||[];if(hit===null){hit={};for(var j=0;j<ids.length;j++){hit[ids[j]]=1}}else{var nx={};for(var k=0;k<ids.length;k++){if(hit[ids[k]]){nx[ids[k]]=1}}hit=nx}if(!Object.keys(hit).length){break}}
-var keys=Object.keys(hit||{}).map(Number).sort(function(a,b){return a-b});var bp=base();
-if(!keys.length){out.innerHTML="<p>Kh\u00f4ng t\u00ecm th\u1ea5y k\u1ebft qu\u1ea3.</p>";return}
-var h="<p>T\u00ecm th\u1ea5y "+keys.length+" \u0111o\u1ea1n.</p>";var lim=Math.min(keys.length,100);
-for(var n=0;n<lim;n++){var c=CHS[keys[n]-1];h+='<a href="'+bp+"/"+c.slug+"/"+c.n+'/">'+esc(c.book)+" "+c.n+"</a>"}
-if(keys.length>lim){h+="<p>\u2026ch\u1ec9 hi\u1ec3n th\u1ecb 100 k\u1ebft qu\u1ea3 \u0111\u1ea7u.</p>"}
-out.innerHTML=h}
-document.getElementById("search-form").addEventListener("submit",run);
-Promise.all([fetch(base()+"/data/search_index.json").then(function(r){return r.json()}),fetch(base()+"/data/chapters.json").then(function(r){return r.json()})]).then(function(v){IDX=v[0];CHS=v[1];var pre=document.getElementById("q").value;if(pre){run()}}).catch(function(){document.getElementById("results").innerHTML="<p>Kh\u00f4ng t\u1ea3i \u0111\u01b0\u1ee3c d\u1eef li\u1ec7u t\u00ecm ki\u1ebfm.</p>"});
-"""
-
-DAILY_JS = """\
-"use strict";
-function esc(s){return s.replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;")}
-function base(){var b=document.querySelector('meta[name="kt-base"]');return b?b.content:""}
-fetch(base()+"/data/chapters.json").then(function(r){return r.json()}).then(function(chs){
-var id=(Math.floor(Date.now()/864e5)%chs.length)+1;
-return fetch(base()+"/data/ch/"+id+".json").then(function(r){return r.json()})}).then(function(d){
-var bp=base();document.getElementById("daily-title").textContent=d.book+" "+d.n;
-document.getElementById("daily-link").href=bp+"/"+d.slug+"/"+d.n+"/";
-var h="",p=[];for(var i=0;i<d.blocks.length;i++){var b=d.blocks[i];
-if(b.t==="h"){if(p.length){h+='<p class="reading">'+p.join("")+"</p>";p=[]}
-h+="<h2>"+esc(b.x)+"</h2>"}else{p.push("<sup>"+b.n+"</sup>"+esc(b.x)+" ")}}
-if(p.length){h+='<p class="reading">'+p.join("")+"</p>"}
-document.getElementById("daily-text").innerHTML=h}).catch(function(){
-document.getElementById("daily-text").innerHTML="<p>Kh\u00f4ng t\u1ea3i \u0111\u01b0\u1ee3c \u0111o\u1ea1n Kinh Th\u00e1nh h\u00f4m nay.</p>"});
-"""
+def minify_js(s):
+    s = re.sub(r'//.*$', '', s, flags=re.M)
+    s = re.sub(r'\s*\n\s*', ' ', s)
+    s = re.sub(r'\s+', ' ', s)
+    return s.strip()
 
 
 def esc(text):
@@ -288,28 +63,12 @@ def esc(text):
 
 def page(bp, title, desc, body, scripts=(), nav_extra=""):
     head_extra = "".join(
-        ['<script src="%s/assets/%s" defer></script>' % (bp, s)
-         for s in scripts])
-    return ("<!DOCTYPE html>\n<html lang=\"vi\">\n<head>\n<meta charset=\"utf-8\">\n"
-            "<meta name=\"viewport\" content=\"width=device-width,initial-scale=1\">\n"
-            "<meta name=\"kt-base\" content=\"%s\">\n"
-            "<meta name=\"description\" content=\"%s\">\n<title>%s</title>\n"
-            "<link rel=\"stylesheet\" href=\"%s/assets/style.css\">\n%s%s\n</head>\n"
-            "<body>\n<header class=\"top\"><div class=\"bar\">"
-            "<a class=\"brand\" href=\"%s/\">Kinh Th<span>e</span>nh Ti\u00eang Vi\u00eat</a>"
-            "<nav class=\"main\"><a href=\"%s/\">Trang ch&#7911;</a>"
-            "%s"
-            "<a href=\"%s/tim-kiem/\">T&igrave;m ki&#7871;m</a></nav>"
-            "<span class=\"controls\">"
-            "<button id=\"fs-dec\" title=\"Ch&#7919; nh&#7887;\">A-</button>"
-            "<button id=\"fs-inc\" title=\"Ch&#7919; l&#7899;n\">A+</button>"
-            "<button id=\"theme-btn\" title=\"Ng&#7875;/ng&agrave;y\">&#9681;</button>"
-            "</span></div></header>\n"
-            "<main class=\"wrap\">\n%s\n</main>\n"
-            "<footer class=\"site\"><div class=\"wrap\">%s</div></footer>\n"
-            "</body>\n</html>\n"
-            % (bp, esc(desc), esc(title), bp, EARLY_SCRIPT, head_extra,
-               bp, esc(SITE_NAME), nav_extra, bp, body, esc(SITE_NAME)))
+        '<script src="%s/assets/%s" defer></script>' % (bp, s)
+        for s in scripts)
+    return PAGE_TPL.substitute(
+        bp=bp, title=esc(title), desc=esc(desc),
+        body=body, head_extra=head_extra,
+        site_name=esc(SITE_NAME), nav_extra=nav_extra)
 
 
 def write(path, content):
@@ -379,11 +138,11 @@ def main():
         c = idmap[cid - 1]
         return "%s %d" % (c["book"], c["n"])
 
-    # ---- shared assets ----------------------------------------------------
-    write(os.path.join(out, "assets", "style.css"), CSS)
-    write(os.path.join(out, "assets", "app.js"), APP_JS)
-    write(os.path.join(out, "assets", "search.js"), SEARCH_JS)
-    write(os.path.join(out, "assets", "daily.js"), DAILY_JS)
+    # ---- shared assets (minified for output) --------------------------------
+    write(os.path.join(out, "assets", "style.css"), minify_css(CSS_SRC))
+    write(os.path.join(out, "assets", "app.js"), minify_js(APP_JS_SRC))
+    write(os.path.join(out, "assets", "search.js"), minify_js(SEARCH_JS_SRC))
+    write(os.path.join(out, "assets", "daily.js"), minify_js(DAILY_JS_SRC))
     with open(args.index, encoding="utf-8") as f:
         write(os.path.join(out, "data", "search_index.json"), f.read())
     write(os.path.join(out, "data", "chapters.json"),
@@ -515,8 +274,18 @@ def main():
                "t\u1ea1i. <a href=\"%s/\">V\u1ec1 trang ch\u1ee7</a>.</p>" % bp,
                ("app.js",), nav_dd))
 
+    # ---- zip ---------------------------------------------------------------
+    zip_path = out + ".zip"
+    with zipfile.ZipFile(zip_path, "w", zipfile.ZIP_DEFLATED) as zf:
+        for root_dir, dirs, files in os.walk(out):
+            for f in files:
+                fp = os.path.join(root_dir, f)
+                arcname = os.path.relpath(fp, out)
+                zf.write(fp, arcname)
+
     n_files = sum(len(fs) for _, _, fs in os.walk(out))
-    print("books=%d chapters=%d files=%d" % (len(books), total, n_files))
+    print("books=%d chapters=%d files=%d zip=%s" % (len(books), total,
+                                                     n_files, zip_path))
     return 0
 
 
