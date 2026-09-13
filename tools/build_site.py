@@ -29,39 +29,200 @@ from datetime import datetime, timezone
 SITE_NAME = "Kinh Th\xe1nh Ti\xeang Vi\xeat"
 
 CSS = """\
-:root{--bg:#ffffff;--fg:#1a1a1a;--mut:#666666;--acc:#1d4ed8;--line:#e5e5e5;--fs:17px}
-html[data-theme="dark"]{--bg:#121212;--fg:#e8e8e8;--mut:#aaaaaa;--acc:#8ab4ff;--line:#333333}
-*{box-sizing:border-box}
-body{margin:0;background:var(--bg);color:var(--fg);font:var(--fs)/1.75 Georgia,"Times New Roman",serif}
-.wrap{max-width:44rem;margin:0 auto;padding:0 1rem 3rem}
-header.top{border-bottom:1px solid var(--line);margin-bottom:1.5rem}
-header.top .bar{max-width:44rem;margin:0 auto;padding:.6rem 1rem;display:flex;gap:1rem;align-items:center;justify-content:space-between;flex-wrap:wrap}
-.brand{font-weight:bold;text-decoration:none;color:var(--fg);font-size:1.1rem}
-nav.main a{margin-right:1rem}
-a{color:var(--acc)}
-.controls{display:flex;gap:.4rem;align-items:center}
-.controls button{background:none;border:1px solid var(--line);color:var(--fg);border-radius:.4rem;padding:.15rem .55rem;cursor:pointer;font-size:.9rem}
-h1{font-size:1.6rem;line-height:1.3}
-h2.sec{font-size:1.15rem;margin:1.6em 0 .4em}
-p.verse{margin:.5em 0}
-.vnum{font-size:.75em;vertical-align:super;color:var(--mut);margin-right:.35em;font-family:system-ui,sans-serif}
-.crumb{font-size:.85rem;color:var(--mut);font-family:system-ui,sans-serif}
+:root{
+  --bg:#fcfcfb;--bg2:#f3f2ee;--fg:#1c1917;--fg2:#44403c;--mut:#a8a29e;
+  --acc:#92400e;--acc2:#78350f;--acc-hover:#b45309;--acc-bg:rgba(146,64,14,.06);
+  --line:#e7e5e4;--card:#ffffff;--shadow:0 1px 3px rgba(0,0,0,.06);
+  --serif:"Noto Serif",Georgia,"Times New Roman",serif;
+  --sans:system-ui,-apple-system,"Segoe UI",sans-serif;
+  --fs:18px;
+}
+html[data-theme="dark"]{
+  --bg:#1a1918;--bg2:#252321;--fg:#f5f0eb;--fg2:#d6cec5;--mut:#78716c;
+  --acc:#fbbf24;--acc2:#f59e0b;--acc-hover:#fcd34d;--acc-bg:rgba(251,191,36,.1);
+  --line:#3a3633;--card:#211f1d;--shadow:0 1px 3px rgba(0,0,0,.2);
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+html{scroll-behavior:smooth;-webkit-text-size-adjust:100%}
+body{
+  background:var(--bg);color:var(--fg);
+  font:var(--fs)/1.9 var(--serif);
+  -webkit-font-smoothing:antialiased;text-rendering:optimizeLegibility;
+  transition:background .3s,color .3s
+}
+a{color:var(--acc);text-decoration:none;transition:color .2s}
+a:hover{color:var(--acc-hover);text-decoration:underline}
+.wrap{max-width:42rem;margin:0 auto;padding:0 1.5rem 5rem}
+
+/* ---- header ---- */
+header.top{
+  border-bottom:1px solid var(--line);background:var(--bg);
+  position:sticky;top:0;z-index:100;
+  backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);
+}
+header.top .bar{
+  max-width:42rem;margin:0 auto;padding:.65rem 1.5rem;
+  display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:.5rem
+}
+.brand{font-weight:700;text-decoration:none;color:var(--fg);font-size:1.05rem;letter-spacing:-.02em;font-family:var(--sans)}
+.brand span{color:var(--acc)}
+nav.main{display:flex;gap:1.25rem}
+nav.main a{color:var(--mut);font-size:.85rem;font-family:var(--sans);font-weight:500;text-decoration:none;transition:color .2s}
+nav.main a:hover{color:var(--acc);text-decoration:none}
+.controls{display:flex;gap:.3rem;align-items:center}
+.controls button{
+  background:none;border:1px solid var(--line);color:var(--mut);
+  border-radius:6px;padding:.25rem .55rem;cursor:pointer;
+  font-size:.8rem;font-family:var(--sans);transition:all .2s
+}
+.controls button:hover{border-color:var(--acc);color:var(--acc)}
+.controls button:active{transform:scale(.95)}
+
+/* ---- crumbs ---- */
+.crumb{font-size:.8rem;color:var(--mut);font-family:var(--sans);margin-bottom:.5rem}
 .crumb a{color:var(--mut)}
-ul.books{list-style:none;margin:0;padding:0;display:grid;grid-template-columns:repeat(auto-fill,minmax(12rem,1fr));gap:.4rem}
-ul.books a{display:block;border:1px solid var(--line);border-radius:.5rem;padding:.5rem .7rem;text-decoration:none;color:var(--fg)}
-ul.books a:hover{border-color:var(--acc)}
-ul.books span{color:var(--mut);font-size:.8rem;font-family:system-ui,sans-serif}
-ol.chaps{columns:6;list-style:none;margin:0;padding:0}
-ol.chaps a{display:block;padding:.3rem 0;text-decoration:none}
-nav.pn{display:flex;justify-content:space-between;gap:1rem;margin:2.5rem 0 0;padding-top:1rem;border-top:1px solid var(--line);font-family:system-ui,sans-serif}
-#daily{border:1px solid var(--line);border-radius:.6rem;padding:1rem 1.2rem;margin-bottom:2rem}
-#daily .kicker{font-family:system-ui,sans-serif;color:var(--mut);font-size:.85rem;margin:0}
-form.search{display:flex;gap:.5rem;margin:1rem 0}
-form.search input{flex:1;padding:.5rem;font-size:1rem;background:var(--bg);color:var(--fg);border:1px solid var(--line);border-radius:.4rem}
-form.search button{padding:.5rem 1rem;font-size:1rem}
-#results a{display:block;padding:.3rem 0}
-footer.site{border-top:1px solid var(--line);margin-top:3rem;padding:1rem;color:var(--mut);font-size:.8rem;font-family:system-ui,sans-serif}
-@media print{header.top,.controls,nav.pn,form.search{display:none}.wrap{max-width:none}}
+.crumb a:hover{color:var(--acc)}
+
+/* ---- verse of the day ---- */
+#daily{
+  border:1px solid var(--line);border-radius:12px;
+  padding:2.25rem 2.5rem;margin-bottom:3rem;
+  background:var(--card);box-shadow:var(--shadow)
+}
+#daily .kicker{
+  font-family:var(--sans);font-size:.7rem;font-weight:700;
+  color:var(--acc);letter-spacing:.1em;text-transform:uppercase;margin:0 0 .5rem
+}
+#daily h2#daily-title{
+  font-size:1.4rem;font-weight:700;font-family:var(--sans);
+  color:var(--fg);margin:0 0 1.25rem;letter-spacing:-.01em
+}
+#daily-text{color:var(--fg2);line-height:2}
+#daily-text sup{font-size:.65em;color:var(--acc);font-family:var(--sans);font-weight:600;margin-right:.15em;opacity:.7}
+#daily-link{
+  display:inline-block;margin-top:1.25rem;
+  font-family:var(--sans);font-size:.85rem;font-weight:600;color:var(--acc)
+}
+#daily-link:hover{text-decoration:none}
+
+/* ---- home section titles ---- */
+.section-title{
+  font-family:var(--sans);font-size:1.1rem;font-weight:700;
+  color:var(--fg);margin:2.5rem 0 1rem;padding-bottom:.6rem;
+  border-bottom:2px solid var(--line);letter-spacing:-.01em
+}
+
+/* ---- book grid ---- */
+.books{list-style:none;display:grid;grid-template-columns:repeat(auto-fill,minmax(11rem,1fr));gap:.6rem;margin:0;padding:0}
+.books li a{
+  display:flex;align-items:center;justify-content:space-between;
+  border:1px solid var(--line);border-radius:10px;
+  padding:.7rem 1rem;text-decoration:none;color:var(--fg);
+  background:var(--card);transition:all .2s
+}
+.books li a:hover{border-color:var(--acc);text-decoration:none;box-shadow:var(--shadow)}
+.books li a .t{font-family:var(--sans);font-size:.88rem;font-weight:600;color:var(--fg)}
+.books li a .c{font-family:var(--sans);font-size:.7rem;color:var(--mut);font-weight:500}
+
+/* ---- chapter index ---- */
+.chaps{columns:3;list-style:none;margin:0;padding:0;column-gap:1.5rem}
+.chaps li a{
+  display:block;padding:.5rem 0;color:var(--fg);
+  font-family:var(--sans);font-size:.9rem;text-decoration:none;
+  border-bottom:1px solid var(--line);transition:color .15s
+}
+.chaps li:last-child a{border-bottom:none}
+.chaps li a:hover{color:var(--acc);text-decoration:none}
+
+/* ---- chapter content: flowing paragraphs ---- */
+.chapter-meta{margin-bottom:2rem}
+.chapter-meta h1{
+  font-size:2rem;font-weight:700;font-family:var(--sans);
+  color:var(--fg);letter-spacing:-.02em;line-height:1.2;margin:0 0 .25rem
+}
+.chapter-meta .sub{color:var(--mut);font-size:.8rem;font-family:var(--sans)}
+h2.sec{
+  font-size:1rem;font-weight:700;font-family:var(--sans);
+  color:var(--acc);letter-spacing:.02em;
+  margin:2.5em 0 .75em;text-transform:uppercase
+}
+p.reading{
+  text-indent:0;margin:0 0 1.25em;line-height:2;
+  text-align:justify;hyphens:auto
+}
+p.reading sup{
+  font-size:.6em;color:var(--acc);font-family:var(--sans);
+  font-weight:600;margin-right:.1em;opacity:.7
+}
+p.reading sup[id]{
+  cursor:pointer;transition:color .15s
+}
+p.reading sup[id]:hover{opacity:1}
+
+/* ---- prev / next navigation ---- */
+nav.pn{
+  display:flex;justify-content:space-between;gap:1rem;
+  margin:3.5rem 0 0;padding-top:1.5rem;border-top:1px solid var(--line);
+  font-family:var(--sans);font-size:.85rem
+}
+nav.pn a{
+  display:inline-flex;align-items:center;gap:.3rem;
+  color:var(--fg2);padding:.4rem .8rem;border:1px solid var(--line);
+  border-radius:8px;transition:all .2s;font-weight:500;text-decoration:none
+}
+nav.pn a:hover{border-color:var(--acc);color:var(--acc);text-decoration:none}
+nav.pn span.empty{visibility:hidden}
+
+/* ---- search ---- */
+form.search{display:flex;gap:.5rem;margin:2rem 0}
+form.search input{
+  flex:1;padding:.75rem 1rem;font-size:1rem;font-family:var(--sans);
+  background:var(--card);color:var(--fg);
+  border:2px solid var(--line);border-radius:10px;
+  transition:border-color .2s;outline:none
+}
+form.search input:focus{border-color:var(--acc)}
+form.search button{
+  padding:.75rem 1.5rem;font-size:.9rem;font-family:var(--sans);font-weight:600;
+  background:var(--acc);color:#fff;border:none;border-radius:10px;
+  cursor:pointer;transition:background .2s
+}
+form.search button:hover{background:var(--acc-hover)}
+#results{margin-top:1.5rem}
+#results p{color:var(--fg2);font-family:var(--sans);font-size:.9rem}
+#results a{
+  display:block;padding:.5rem .75rem;border-radius:6px;
+  transition:background .15s;font-family:var(--sans);font-size:.9rem;
+  color:var(--fg);text-decoration:none
+}
+#results a:hover{background:var(--acc-bg);text-decoration:none}
+
+/* ---- footer ---- */
+footer.site{
+  border-top:1px solid var(--line);margin-top:4rem;
+  padding:1.5rem 0;color:var(--mut);
+  font-size:.75rem;font-family:var(--sans);text-align:center
+}
+
+/* ---- print ---- */
+@media print{
+  header.top,.controls,nav.pn,form.search,.crumb{display:none}
+  .wrap{max-width:none;padding:0}
+  body{font-size:12pt;line-height:1.6}
+  #daily{border:none;box-shadow:none;background:none}
+  p.reading sup{color:var(--fg);opacity:.5}
+}
+
+/* ---- responsive ---- */
+@media (max-width:640px){
+  .wrap{padding:0 1rem 3rem}
+  header.top .bar{padding:.5rem 1rem}
+  #daily{padding:1.5rem}
+  .chaps{columns:2}
+  .books{grid-template-columns:1fr 1fr;gap:.5rem}
+  .chapter-meta h1{font-size:1.5rem}
+  nav.pn{font-size:.8rem}
+}
 """
 
 # Runs before render to avoid a theme flash. Braces doubled: plain string.
@@ -108,8 +269,10 @@ var id=(Math.floor(Date.now()/864e5)%chs.length)+1;
 return fetch(base()+"/data/ch/"+id+".json").then(function(r){return r.json()})}).then(function(d){
 var bp=base();document.getElementById("daily-title").textContent=d.book+" "+d.n;
 document.getElementById("daily-link").href=bp+"/"+d.slug+"/"+d.n+"/";
-var h="";for(var i=0;i<d.blocks.length;i++){var b=d.blocks[i];
-if(b.t==="h"){h+="<h2 class=\\"sec\\">"+esc(b.x)+"</h2>"}else{h+='<p class="verse"><span class="vnum">'+b.n+"</span>"+esc(b.x)+"</p>"}}
+var h="",p=[];for(var i=0;i<d.blocks.length;i++){var b=d.blocks[i];
+if(b.t==="h"){if(p.length){h+='<p class="reading">'+p.join("")+"</p>";p=[]}
+h+="<h2>"+esc(b.x)+"</h2>"}else{p.push("<sup>"+b.n+"</sup>"+esc(b.x)+" ")}}
+if(p.length){h+='<p class="reading">'+p.join("")+"</p>"}
 document.getElementById("daily-text").innerHTML=h}).catch(function(){
 document.getElementById("daily-text").innerHTML="<p>Kh\u00f4ng t\u1ea3i \u0111\u01b0\u1ee3c \u0111o\u1ea1n Kinh Th\u00e1nh h\u00f4m nay.</p>"});
 """
@@ -129,7 +292,7 @@ def page(bp, title, desc, body, scripts=()):
             "<meta name=\"description\" content=\"%s\">\n<title>%s</title>\n"
             "<link rel=\"stylesheet\" href=\"%s/assets/style.css\">\n%s%s\n</head>\n"
             "<body>\n<header class=\"top\"><div class=\"bar\">"
-            "<a class=\"brand\" href=\"%s/\">%s</a>"
+            "<a class=\"brand\" href=\"%s/\">Kinh Th<span>e</span>nh Ti\u00eang Vi\u00eat</a>"
             "<nav class=\"main\"><a href=\"%s/\">Trang ch&#7911;</a>"
             "<a href=\"%s/tim-kiem/\">T&igrave;m ki&#7871;m</a></nav>"
             "<span class=\"controls\">"
@@ -217,30 +380,35 @@ def main():
         for ch in book["chapters"]:
             cid += 1
             blocks_html, blocks_json = [], []
+            para = []
             for b in ch["blocks"]:
                 if b["type"] == "heading":
+                    if para:
+                        blocks_html.append('<p class="reading">%s</p>' % "".join(para))
+                        para = []
                     blocks_html.append("<h2 class=\"sec\">%s</h2>"
                                        % esc(b["text"]))
                     blocks_json.append({"t": "h", "x": b["text"]})
                 else:
-                    blocks_html.append(
-                        "<p class=\"verse\" id=\"c%dv%d\">"
-                        "<span class=\"vnum\">%d</span>%s</p>"
+                    para.append(
+                        "<sup id=\"c%dv%d\">%d</sup>%s "
                         % (ch["number"], b["number"], b["number"],
                            esc(b["text"])))
                     blocks_json.append({"t": "v", "n": b["number"],
                                         "x": b["text"]})
+            if para:
+                blocks_html.append('<p class="reading">%s</p>' % "".join(para))
             pn = "<nav class=\"pn\">"
             if cid > 1:
                 pn += "<a href=\"%s\">&#8249; %s</a>" % (url_of(cid - 1),
                                                          esc(label_of(cid - 1)))
             else:
-                pn += "<span></span>"
+                pn += "<span class=\"empty\"></span>"
             if cid < total:
                 pn += "<a href=\"%s\">%s &#8250;</a>" % (url_of(cid + 1),
                                                          esc(label_of(cid + 1)))
             else:
-                pn += "<span></span>"
+                pn += "<span class=\"empty\"></span>"
             pn += "</nav>"
             sub = ""
             if book.get("subtitle"):
@@ -248,7 +416,8 @@ def main():
             if book.get("range"):
                 sub += "<p class=\"crumb\">%s</p>" % esc(book["range"])
             body = ("<p class=\"crumb\"><a href=\"%s/\">%s</a> / "
-                    "<a href=\"%s/%s/\">%s</a></p>\n<h1>%s %d</h1>\n%s\n%s\n%s"
+                    "<a href=\"%s/%s/\">%s</a></p>\n"
+                    "<div class=\"chapter-meta\"><h1>%s %d</h1>\n%s</div>\n%s\n%s"
                     % (bp, esc(SITE_NAME), bp, book["slug"],
                        esc(book["title"]), esc(book["title"]), ch["number"],
                        sub, "\n".join(blocks_html), pn))
@@ -276,8 +445,9 @@ def main():
             sub += "<p>%s</p>" % esc(book["subtitle"])
         if book.get("range"):
             sub += "<p class=\"crumb\">%s</p>" % esc(book["range"])
-        body = ("<p class=\"crumb\"><a href=\"%s/\">%s</a></p>\n<h1>%s</h1>\n"
-                "%s\n<ol class=\"chaps\">%s</ol>"
+        body = ("<p class=\"crumb\"><a href=\"%s/\">%s</a></p>\n"
+                "<div class=\"chapter-meta\"><h1>%s</h1>\n%s</div>\n"
+                "<ol class=\"chaps\">%s</ol>"
                 % (bp, esc(SITE_NAME), esc(book["title"]), sub, lis))
         write(os.path.join(out, book["slug"], "index.html"),
               page(bp, "%s | %s" % (book["title"], SITE_NAME),
@@ -302,15 +472,15 @@ def main():
             "\u0110\u1ecdc c\u1ea3 \u0111o\u1ea1n &#8594;</a></p>\n"
             "<noscript><p><a href=\"%s/sang-the-ky/1/\">"
             "S\u00e1ng Th\u1ebf k\u00fd 1</a></p></noscript></section>\n"
-            "<h2 id=\"sach\">C\u1ef1u \u01af\u1edbc</h2>\n%s\n"
-            "<h2>T\u00e2n \u01af\u1edbc</h2>\n%s"
+            "<h2 class=\"section-title\">C\u1ef1u \u01af\u1edbc</h2>\n%s\n"
+            "<h2 class=\"section-title\">T\u00e2n \u01af\u1edbc</h2>\n%s"
             % (bp, grid(ot), grid(nt)))
     write(os.path.join(out, "index.html"),
           page(bp, SITE_NAME, "Kinh Th\xe1nh Ti\xeang Vi\xeat online",
                home, ("app.js", "daily.js")))
 
     # ---- search -----------------------------------------------------------
-    search_body = ("<h1>T&igrave;m ki&#7871;m</h1>\n"
+    search_body = ("<div class=\"chapter-meta\"><h1>T&igrave;m ki&#7871;m</h1></div>\n"
                    "<form id=\"search-form\" class=\"search\">"
                    "<input id=\"q\" name=\"q\" autocomplete=\"off\" "
                    "placeholder=\"V&iacute; d&#7909;: Gi&ecirc;-h&ocirc;-va\">"
