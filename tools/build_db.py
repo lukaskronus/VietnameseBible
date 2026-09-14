@@ -12,7 +12,9 @@ Outputs (under --out):
 Schema:
     books(id, code, position, testament, slug, title, subtitle, range)
     chapters(id, book_id, number)       -- ids run 1..N in canon order
-    verses(id, chapter_id, number, text, text_norm)
+    verses(id, chapter_id, number, text, text_en, text_norm)
+      text = Vietnamese (primary), text_en = English NASB (secondary),
+      text_norm = folded "vi + en" for bilingual search
     headings(id, chapter_id, position, text)
     verses_fts                          -- FTS5 over text_norm, trigger-kept
     meta(key, value)
@@ -66,6 +68,7 @@ CREATE TABLE verses(
   chapter_id INTEGER NOT NULL REFERENCES chapters(id),
   number INTEGER NOT NULL,
   text TEXT NOT NULL,
+  text_en TEXT NOT NULL DEFAULT '',
   text_norm TEXT NOT NULL
 );
 CREATE INDEX idx_verses_chapter ON verses(chapter_id);
@@ -162,12 +165,15 @@ def main():
                     hpos = 0
                     for block in ch["blocks"]:
                         if block["type"] == "verse":
-                            norm = fold(block["text"])
+                            vi = block.get("vi", block.get("text", ""))
+                            en = block.get("en", "")
+                            norm = fold((vi or "") + "\n" + (en or ""))
                             con.execute(
                                 "INSERT INTO verses(chapter_id, number,"
-                                " text, text_norm) VALUES (?,?,?,?)",
+                                " text, text_en, text_norm)"
+                                " VALUES (?,?,?,?,?)",
                                 (chapter_id, block["number"],
-                                 block["text"], norm))
+                                 vi, en, norm))
                             n_verses += 1
                             for tok in set(tokenize(norm)):
                                 postings.setdefault(tok, set()).add(chapter_id)

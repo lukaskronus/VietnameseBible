@@ -103,7 +103,7 @@ nav.main>a:hover,nav.main>.dd:hover{color:var(--acc);text-decoration:none}
 .chaps li:last-child a{border-bottom:none}
 .chaps li a:hover{color:var(--acc);text-decoration:none}
 
-/* ---- chapter content: flowing paragraphs ---- */
+/* ---- chapter content: verse-by-verse bilingual pairs ---- */
 .chapter-meta{margin-bottom:2rem}
 .chapter-meta h1{
   font-size:2rem;font-weight:700;font-family:var(--sans);
@@ -119,6 +119,14 @@ p.reading{
   text-indent:0;margin:0 0 1.25em;line-height:2;
   text-align:justify;hyphens:auto
 }
+/* English secondary text: muted, slightly smaller, pairs with VI above */
+p.reading.en{
+  color:var(--fg2);font-size:.92em;line-height:1.9;
+  border-left:3px solid var(--line);padding-left:1rem;margin:.2em 0 0;
+  text-align:left
+}
+p.reading.vi{margin-bottom:0}
+.verse-pair{margin:0 0 1.1em;padding:0}
 p.reading sup{
   font-size:.6em;color:var(--acc);font-family:var(--sans);
   font-weight:600;margin-right:.1em;opacity:.7

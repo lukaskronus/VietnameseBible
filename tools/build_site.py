@@ -1,19 +1,20 @@
 #!/usr/bin/env python3
-"""Generate the static Vietnamese Bible website (Phase 3).
+"""Generate the static bilingual (VI+EN) Bible website (Phase 3).
 
 Stdlib only.
     python tools/build_site.py --json build/bible.json \
         --index build/search_index.json --out site \
         --base-url https://example.com/ [--base-path ""]
 
-Inputs: Phase 1 bible.json (text + order), Phase 2 search_index.json.
+Inputs: Phase 1 bible.json (bilingual text + order), Phase 2 search_index.json.
 Output: complete static site/ and site.zip -- upload to any static host.
 
-URL scheme: / = home (verse of the day + book grid),
+URL scheme: / = home (bilingual verse of the day + book grid),
 /<slug>/ = book, /<slug>/<n>/ = chapter, /tim-kiem/ = search.
 Chapter ids 1..N follow canon order; the client verse-of-the-day is:
     chapter_id = (days_since_unix_epoch % total_chapters) + 1
-per-chapter JSON under data/ch/<id>.json feeds it.
+per-chapter JSON under data/ch/<id>.json feeds it (each verse carries
+both "vi" and "en"; the home widget renders both).
 
 NOTE: executed by GitHub Actions (cloud) only.
 Local machines are code storage; do not run builds on them.
@@ -30,7 +31,8 @@ from datetime import datetime, timezone
 from pathlib import Path
 from string import Template
 
-SITE_NAME = "Kinh Th\xe1nh Ti\xeang Vi\xeat"
+SITE_NAME = "Kinh Thánh Song Ngữ Việt–Anh"
+SITE_DESC = "Kinh Thánh song ngữ Việt–Anh (1934 Vietnamese Bible + NASB)"
 
 TOOLS_DIR = Path(__file__).resolve().parent
 STATIC_DIR = TOOLS_DIR / "static"
@@ -110,17 +112,22 @@ def main():
               "need the real domain", file=sys.stderr)
 
     # ---- canon-ordered chapter map: id -> {slug, n, book} -----------------
+    def btitle(b):
+        return b.get("title_vi") or b.get("title", "")
+    def btitle_en(b):
+        return b.get("title_en") or ""
     idmap = []  # index i == chapter id i+1
     for book in sorted(books, key=lambda b: b["position"]):
         for ch in book["chapters"]:
             idmap.append({"slug": book["slug"], "n": ch["number"],
-                          "book": book["title"]})
+                          "book": btitle(book),
+                          "book_en": btitle_en(book)})
     total = len(idmap)
 
     # ---- nav dropdown HTML ------------------------------------------------
     def dd_menu(items):
         links = "".join(
-            "<a href=\"%s/%s/\">%s</a>" % (bp, b["slug"], esc(b["title"]))
+            "<a href=\"%s/%s/\">%s</a>" % (bp, b["slug"], esc(btitle(b)))
             for b in sorted(items, key=lambda b: b["position"]))
         return '<div class="dd-menu">%s</div>' % links
 
@@ -138,6 +145,12 @@ def main():
         c = idmap[cid - 1]
         return "%s %d" % (c["book"], c["n"])
 
+    def label_bi(c):
+        if c.get("book_en"):
+            return "%s %d · %s %d" % (c["book"], c["n"],
+                                      c["book_en"], c["n"])
+        return "%s %d" % (c["book"], c["n"])
+
     # ---- shared assets (minified for output) --------------------------------
     write(os.path.join(out, "assets", "style.css"), minify_css(CSS_SRC))
     write(os.path.join(out, "assets", "app.js"), minify_js(APP_JS_SRC))
@@ -147,34 +160,46 @@ def main():
         write(os.path.join(out, "data", "search_index.json"), f.read())
     write(os.path.join(out, "data", "chapters.json"),
           json.dumps([{"id": i + 1, "slug": c["slug"], "n": c["n"],
-                       "book": c["book"]} for i, c in enumerate(idmap)],
+                       "book": c["book"], "book_en": c.get("book_en", "")}
+                      for i, c in enumerate(idmap)],
                      ensure_ascii=False, separators=(",", ":")) + "\n")
 
     # ---- chapter + book pages ---------------------------------------------
     sitemap_urls = [root, root + "tim-kiem/"]
     cid = 0
     for book in sorted(books, key=lambda b: b["position"]):
+        title_vi = btitle(book)
+        title_en = btitle_en(book)
         for ch in book["chapters"]:
             cid += 1
             blocks_html, blocks_json = [], []
-            para = []
+
             for b in ch["blocks"]:
                 if b["type"] == "heading":
-                    if para:
-                        blocks_html.append('<p class="reading">%s</p>' % "".join(para))
-                        para = []
+                    h = b.get("en") or b.get("text", "")
                     blocks_html.append("<h2 class=\"sec\">%s</h2>"
-                                       % esc(b["text"]))
-                    blocks_json.append({"t": "h", "x": b["text"]})
+                                       % esc(h))
+                    blocks_json.append({"t": "h", "x": h,
+                                        "vi": b.get("vi", ""),
+                                        "en": h})
                 else:
-                    para.append(
-                        "<sup id=\"c%dv%d\">%d</sup>%s "
+                    vi = b.get("vi", b.get("text", ""))
+                    en = b.get("en", "")
+                    pair = (
+                        '<div class="verse-pair">'
+                        '<p class="reading vi">'
+                        "<sup id=\"c%dv%d\">%d</sup>%s</p>"
                         % (ch["number"], b["number"], b["number"],
-                           esc(b["text"])))
+                           esc(vi)))
+                    if en:
+                        pair += (
+                            '<p class="reading en" lang="en">'
+                            "<sup>%d</sup>%s</p>"
+                            % (b["number"], esc(en)))
+                    pair += "</div>"
+                    blocks_html.append(pair)
                     blocks_json.append({"t": "v", "n": b["number"],
-                                        "x": b["text"]})
-            if para:
-                blocks_html.append('<p class="reading">%s</p>' % "".join(para))
+                                        "x": vi, "vi": vi, "en": en})
             pn = "<nav class=\"pn\">"
             if cid > 1:
                 pn += "<a href=\"%s\">&#8249; %s</a>" % (url_of(cid - 1),
@@ -192,22 +217,27 @@ def main():
                 sub += "<p>%s</p>" % esc(book["subtitle"])
             if book.get("range"):
                 sub += "<p class=\"crumb\">%s</p>" % esc(book["range"])
+            if title_en:
+                sub += ("<p class=\"crumb\" lang=\"en\">%s</p>"
+                        % esc(title_en))
+            h1 = "%s %d" % (title_vi, ch["number"])
+            h1_bi = h1 if not title_en else "%s · %s %d" % (
+                h1, title_en, ch["number"])
             body = ("<p class=\"crumb\"><a href=\"%s/\">%s</a> / "
                     "<a href=\"%s/%s/\">%s</a></p>\n"
-                    "<div class=\"chapter-meta\"><h1>%s %d</h1>\n%s</div>\n%s\n%s"
+                    "<div class=\"chapter-meta\"><h1>%s</h1>\n%s</div>\n%s\n%s"
                     % (bp, esc(SITE_NAME), bp, book["slug"],
-                       esc(book["title"]), esc(book["title"]), ch["number"],
+                       esc(title_vi), esc(h1_bi),
                        sub, "\n".join(blocks_html), pn))
             write(os.path.join(out, book["slug"], str(ch["number"]),
                                "index.html"),
-                  page(bp, "%s %d | %s" % (book["title"], ch["number"],
-                                           SITE_NAME),
-                       "%s %d" % (book["title"], ch["number"]),
-                       body, ("app.js",), nav_dd))
+                  page(bp, "%s | %s" % (h1_bi, SITE_NAME),
+                       h1_bi, body, ("app.js",), nav_dd))
             sitemap_urls.append(root + "%s/%d/" % (book["slug"],
                                                       ch["number"]))
             write(os.path.join(out, "data", "ch", str(cid) + ".json"),
-                  json.dumps({"id": cid, "book": book["title"],
+                  json.dumps({"id": cid, "book": title_vi,
+                              "book_en": title_en,
                               "slug": book["slug"], "n": ch["number"],
                               "blocks": blocks_json},
                              ensure_ascii=False, separators=(",", ":")) + "\n")
@@ -222,27 +252,34 @@ def main():
             sub += "<p>%s</p>" % esc(book["subtitle"])
         if book.get("range"):
             sub += "<p class=\"crumb\">%s</p>" % esc(book["range"])
+        if title_en:
+            sub += ("<p class=\"crumb\" lang=\"en\">%s</p>"
+                    % esc(title_en))
+        h1_book = title_vi if not title_en else "%s · %s" % (
+            title_vi, title_en)
         body = ("<p class=\"crumb\"><a href=\"%s/\">%s</a></p>\n"
                 "<div class=\"chapter-meta\"><h1>%s</h1>\n%s</div>\n"
                 "<ol class=\"chaps\">%s</ol>"
-                % (bp, esc(SITE_NAME), esc(book["title"]), sub, lis))
+                % (bp, esc(SITE_NAME), esc(h1_book), sub, lis))
         write(os.path.join(out, book["slug"], "index.html"),
-              page(bp, "%s | %s" % (book["title"], SITE_NAME),
-                   book["title"], body, ("app.js",), nav_dd))
+              page(bp, "%s | %s" % (h1_book, SITE_NAME),
+                   h1_book, body, ("app.js",), nav_dd))
         sitemap_urls.append(root + book["slug"] + "/")
 
     # ---- home -------------------------------------------------------------
+    # Daily = deterministic rotation over 1189 chapters, rendered bilingually.
+    first_book = sorted(books, key=lambda b: b["position"])[0]
     home = ("<section id=\"daily\"><p class=\"kicker\">"
-            "\u0110o\u1ea1n Kinh Th\u00e1nh h\u00f4m nay</p>\n"
+            "Song ngữ Việt–Anh · Mỗi ngày một đoạn</p>\n"
             "<h2 id=\"daily-title\">\u2026</h2>\n"
             "<div id=\"daily-text\"><p>\u0110ang t\u1ea3i\u2026</p></div>\n"
             "<p><a id=\"daily-link\" href=\"#\">"
             "\u0110\u1ecdc c\u1ea3 \u0111o\u1ea1n &#8594;</a></p>\n"
-            "<noscript><p><a href=\"%s/sang-the-ky/1/\">"
-            "S\u00e1ng Th\u1ebf k\u00fd 1</a></p></noscript></section>"
-            % bp)
+            "<noscript><p><a href=\"%s/%s/1/\">"
+            "%s 1</a></p></noscript></section>"
+            % (bp, first_book["slug"], esc(btitle(first_book))))
     write(os.path.join(out, "index.html"),
-          page(bp, SITE_NAME, "Kinh Th\xe1nh Ti\xeang Vi\xeat online",
+          page(bp, SITE_NAME, SITE_DESC,
                home, ("app.js", "daily.js"), nav_dd))
 
     # ---- search -----------------------------------------------------------

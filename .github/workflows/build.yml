@@ -1,4 +1,4 @@
-# Phase 1: parse data/*.txt -> build/bible.json + build/validation_report.md
+# Phase 1: parse data/*.sqlite3 (viet + nasb) -> build/bible.json + build/validation_report.md
 # Phase 2: build_db (bible.json -> bible.sqlite + search_index.json)
 # Phase 3: build_site (bible.json + search_index.json -> static site/)
 # Phase 4 (deploy) is manual: download the `site` artifact and publish

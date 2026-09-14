@@ -9,7 +9,7 @@ var hit=null;for(var i=0;i<q.length;i++){var ids=IDX.index[q[i]]||[];if(hit===nu
 var keys=Object.keys(hit||{}).map(Number).sort(function(a,b){return a-b});var bp=base();
 if(!keys.length){out.innerHTML="<p>Kh\u00f4ng t\u00ecm th\u1ea5y k\u1ebft qu\u1ea3.</p>";return}
 var h="<p>T\u00ecm th\u1ea5y "+keys.length+" \u0111o\u1ea1n.</p>";var lim=Math.min(keys.length,100);
-for(var n=0;n<lim;n++){var c=CHS[keys[n]-1];h+='<a href="'+bp+"/"+c.slug+"/"+c.n+'/">'+esc(c.book)+" "+c.n+"</a>"}
+for(var n=0;n<lim;n++){var c=CHS[keys[n]-1];var label=c.book+" "+c.n;if(c.book_en){label+=" · "+c.book_en+" "+c.n}h+='<a href="'+bp+"/"+c.slug+"/"+c.n+'/">'+esc(label)+"</a>"}
 if(keys.length>lim){h+="<p>\u2026ch\u1ec9 hi\u1ec3n th\u1ecb 100 k\u1ebft qu\u1ea3 \u0111\u1ea7u.</p>"}
 out.innerHTML=h}
 document.getElementById("search-form").addEventListener("submit",run);

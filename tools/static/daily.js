@@ -4,11 +4,17 @@ function base(){var b=document.querySelector('meta[name="kt-base"]');return b?b.
 fetch(base()+"/data/chapters.json").then(function(r){return r.json()}).then(function(chs){
 var id=(Math.floor(Date.now()/864e5)%chs.length)+1;
 return fetch(base()+"/data/ch/"+id+".json").then(function(r){return r.json()})}).then(function(d){
-var bp=base();document.getElementById("daily-title").textContent=d.book+" "+d.n;
+var bp=base();
+var title=d.book+" "+d.n;
+if(d.book_en){title+=" · "+d.book_en+" "+d.n}
+document.getElementById("daily-title").textContent=title;
 document.getElementById("daily-link").href=bp+"/"+d.slug+"/"+d.n+"/";
-var h="",p=[];for(var i=0;i<d.blocks.length;i++){var b=d.blocks[i];
-if(b.t==="h"){if(p.length){h+='<p class="reading">'+p.join("")+"</p>";p=[]}
-h+="<h2>"+esc(b.x)+"</h2>"}else{p.push("<sup>"+b.n+"</sup>"+esc(b.x)+" ")}}
-if(p.length){h+='<p class="reading">'+p.join("")+"</p>"}
+var h="";
+for(var i=0;i<d.blocks.length;i++){var b=d.blocks[i];
+if(b.t==="h"){var hx=b.en||b.x||"";h+="<h2>"+esc(hx)+"</h2>"}
+else{var vi=b.vi||b.x||"",en=b.en||"";
+h+='<div class="verse-pair"><p class="reading vi"><sup>'+b.n+"</sup>"+esc(vi)+"</p>";
+if(en){h+='<p class="reading en" lang="en"><sup>'+b.n+"</sup>"+esc(en)+"</p>"}
+h+="</div>"}}
 document.getElementById("daily-text").innerHTML=h}).catch(function(){
-document.getElementById("daily-text").innerHTML="<p>Kh\u00f4ng t\u1ea3i \u0111\u01b0\u1ee3c \u0111o\u1ea1n Kinh Th\u00e1nh h\u00f4m nay.</p>"});
+document.getElementById("daily-text").innerHTML="<p>Không tải được đoạn Kinh Thánh hôm nay.</p>"});
