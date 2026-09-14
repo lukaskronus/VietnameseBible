@@ -1,8 +1,8 @@
 # Phase 1: parse data/*.sqlite3 (viet + nasb) -> build/bible.json + build/validation_report.md
 # Phase 2: build_db (bible.json -> bible.sqlite + search_index.json)
 # Phase 3: build_site (bible.json + search_index.json -> static site/)
-# Phase 4 (deploy) is manual: download the `site` artifact and publish
-# it to any static host (Netlify, Vercel, DO App Platform, ...).
+# Phase 4: deploy the `site` artifact to Wasmer Edge (master pushes only).
+# Requires the WASMER_TOKEN repo secret and matching name/owner in app.yaml.
 #
 # All execution happens on GitHub-hosted runners; local machines are
 # code storage only (no builds there).
@@ -130,3 +130,29 @@ jobs:
           name: site
           path: site
           retention-days: 30
+
+  deploy_wasmer:
+    name: Deploy to Wasmer Edge (Phase 4)
+    runs-on: ubuntu-latest
+    needs: build_site
+    # Master pushes only -- PRs still build but never deploy.
+    if: github.event_name == 'push' && github.ref == 'refs/heads/master'
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v5
+
+      - name: Download site artifact
+        uses: actions/download-artifact@v7
+        with:
+          name: site
+          path: site
+
+      - name: Set up Wasmer CLI
+        uses: wasmerio/setup-wasmer@v3
+
+      - name: Deploy site to Wasmer Edge
+        # wasmer.toml ([fs] site/ + settings/) + app.yaml (name/owner/app_id)
+        # publish this build as a new package version of the dashboard app.
+        run: wasmer deploy --publish-package --non-interactive --no-wait --no-persist-id
+        env:
+          WASMER_TOKEN: ${{ secrets.WASMER_TOKEN }}

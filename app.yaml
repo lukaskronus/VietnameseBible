@@ -1,0 +1,8 @@
+# Wasmer Edge deploy target (Phase 4).
+# `wasmer deploy --publish-package` publishes wasmer.toml above and points
+# this app at the new version. app_id pins the existing dashboard app.
+kind: wasmer.io/App.v0
+name: dailyverse
+owner: kobayashi123
+package: kobayashi123/dailyverse
+app_id: da_2dAIdtrUd5VV
