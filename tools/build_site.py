@@ -10,7 +10,8 @@ Inputs: Phase 1 bible.json (bilingual text + order), Phase 2 search_index.json.
 Output: complete static site/ and site.zip -- upload to any static host.
 
 URL scheme: / = home (bilingual verse of the day + book grid),
-/<slug>/ = book, /<slug>/<n>/ = chapter, /tim-kiem/ = search.
+/<slug>/ = book split reader (chapter 1 embedded, other chapters load
+via book.js), /<slug>/<n>/ = chapter, /tim-kiem/ = search.
 Chapter ids 1..N follow canon order; the client verse-of-the-day is:
     chapter_id = (days_since_unix_epoch % total_chapters) + 1
 per-chapter JSON under data/ch/<id>.json feeds it (each verse carries
@@ -31,8 +32,8 @@ from datetime import datetime, timezone
 from pathlib import Path
 from string import Template
 
-SITE_NAME = "Kinh Thánh Song Ngữ Việt–Anh"
-SITE_DESC = "Kinh Thánh song ngữ Việt–Anh (1934 Vietnamese Bible + NASB)"
+SITE_NAME = "Kinh Thánh Song Ngữ Việt - Anh"
+SITE_DESC = "Kinh Thánh song ngữ Việt - Anh (1934 Vietnamese Bible + NASB)"
 
 TOOLS_DIR = Path(__file__).resolve().parent
 STATIC_DIR = TOOLS_DIR / "static"
@@ -43,6 +44,7 @@ CSS_SRC = (STATIC_DIR / "style.css").read_text("utf-8")
 APP_JS_SRC = (STATIC_DIR / "app.js").read_text("utf-8")
 SEARCH_JS_SRC = (STATIC_DIR / "search.js").read_text("utf-8")
 DAILY_JS_SRC = (STATIC_DIR / "daily.js").read_text("utf-8")
+BOOK_JS_SRC = (STATIC_DIR / "book.js").read_text("utf-8")
 
 
 def minify_css(s):
@@ -133,8 +135,8 @@ def main():
 
     ot_books = [b for b in books if b["testament"] == "OT"]
     nt_books = [b for b in books if b["testament"] != "OT"]
-    nav_dd = ("<div class=\"dd\">C\u1ef1u \u01af\u1edbc%s</div>"
-              "<div class=\"dd\">T\u00e2n \u01af\u1edbc%s</div>"
+    nav_dd = ("<div class=\"dd\">Cựu Ước%s</div>"
+              "<div class=\"dd\">Tân Ước%s</div>"
               % (dd_menu(ot_books), dd_menu(nt_books)))
 
     def url_of(cid):
@@ -156,6 +158,7 @@ def main():
     write(os.path.join(out, "assets", "app.js"), minify_js(APP_JS_SRC))
     write(os.path.join(out, "assets", "search.js"), minify_js(SEARCH_JS_SRC))
     write(os.path.join(out, "assets", "daily.js"), minify_js(DAILY_JS_SRC))
+    write(os.path.join(out, "assets", "book.js"), minify_js(BOOK_JS_SRC))
     with open(args.index, encoding="utf-8") as f:
         write(os.path.join(out, "data", "search_index.json"), f.read())
     write(os.path.join(out, "data", "chapters.json"),
@@ -164,51 +167,55 @@ def main():
                       for i, c in enumerate(idmap)],
                      ensure_ascii=False, separators=(",", ":")) + "\n")
 
+    def render_blocks(ch_number, blocks):
+        """Render bilingual verse-pair HTML + JSON blocks for one chapter."""
+        html_parts, json_parts = [], []
+        for b in blocks:
+            if b["type"] == "heading":
+                h = b.get("en") or b.get("text", "")
+                html_parts.append("<h2 class=\"sec\">%s</h2>" % esc(h))
+                json_parts.append({"t": "h", "x": h,
+                                    "vi": b.get("vi", ""), "en": h})
+            else:
+                vi = b.get("vi", b.get("text", ""))
+                en = b.get("en", "")
+                pair = (
+                    '<div class="verse-pair">'
+                    '<p class="reading vi">'
+                    "<sup id=\"c%dv%d\">%d</sup>%s</p>"
+                    % (ch_number, b["number"], b["number"], esc(vi)))
+                if en:
+                    pair += (
+                        '<p class="reading en" lang="en">'
+                        "<sup>%d</sup>%s</p>"
+                        % (b["number"], esc(en)))
+                pair += "</div>"
+                html_parts.append(pair)
+                json_parts.append({"t": "v", "n": b["number"],
+                                    "x": vi, "vi": vi, "en": en})
+        return html_parts, json_parts
+
     # ---- chapter + book pages ---------------------------------------------
     sitemap_urls = [root, root + "tim-kiem/"]
     cid = 0
     for book in sorted(books, key=lambda b: b["position"]):
         title_vi = btitle(book)
         title_en = btitle_en(book)
+        book_cids = []  # (chapter number, chapter id) for the side pane
         for ch in book["chapters"]:
             cid += 1
-            blocks_html, blocks_json = [], []
-
-            for b in ch["blocks"]:
-                if b["type"] == "heading":
-                    h = b.get("en") or b.get("text", "")
-                    blocks_html.append("<h2 class=\"sec\">%s</h2>"
-                                       % esc(h))
-                    blocks_json.append({"t": "h", "x": h,
-                                        "vi": b.get("vi", ""),
-                                        "en": h})
-                else:
-                    vi = b.get("vi", b.get("text", ""))
-                    en = b.get("en", "")
-                    pair = (
-                        '<div class="verse-pair">'
-                        '<p class="reading vi">'
-                        "<sup id=\"c%dv%d\">%d</sup>%s</p>"
-                        % (ch["number"], b["number"], b["number"],
-                           esc(vi)))
-                    if en:
-                        pair += (
-                            '<p class="reading en" lang="en">'
-                            "<sup>%d</sup>%s</p>"
-                            % (b["number"], esc(en)))
-                    pair += "</div>"
-                    blocks_html.append(pair)
-                    blocks_json.append({"t": "v", "n": b["number"],
-                                        "x": vi, "vi": vi, "en": en})
+            book_cids.append((ch["number"], cid))
+            blocks_html, blocks_json = render_blocks(ch["number"],
+                                                     ch["blocks"])
             pn = "<nav class=\"pn\">"
             if cid > 1:
-                pn += "<a href=\"%s\">&#8249; %s</a>" % (url_of(cid - 1),
-                                                         esc(label_of(cid - 1)))
+                pn += "<a href=\"%s\">‹ %s</a>" % (url_of(cid - 1),
+                                                  esc(label_of(cid - 1)))
             else:
                 pn += "<span class=\"empty\"></span>"
             if cid < total:
-                pn += "<a href=\"%s\">%s &#8250;</a>" % (url_of(cid + 1),
-                                                         esc(label_of(cid + 1)))
+                pn += "<a href=\"%s\">%s ›</a>" % (url_of(cid + 1),
+                                                  esc(label_of(cid + 1)))
             else:
                 pn += "<span class=\"empty\"></span>"
             pn += "</nav>"
@@ -242,39 +249,51 @@ def main():
                               "blocks": blocks_json},
                              ensure_ascii=False, separators=(",", ":")) + "\n")
 
-        # book page (after its chapters so counts are known)
-        lis = "".join(
-            "<li><a href=\"%s/%s/%d/\">%d</a></li>"
-            % (bp, book["slug"], c["number"], c["number"])
-            for c in book["chapters"])
-        sub = ""
-        if book.get("subtitle"):
-            sub += "<p>%s</p>" % esc(book["subtitle"])
-        if book.get("range"):
-            sub += "<p class=\"crumb\">%s</p>" % esc(book["range"])
-        if title_en:
-            sub += ("<p class=\"crumb\" lang=\"en\">%s</p>"
-                    % esc(title_en))
+        # book page: split reader -- chapter content left, chapter buttons
+        # right. Chapter 1 is embedded statically; other chapters load
+        # via book.js (fetch data/ch/<id>.json, no page reload). Buttons
+        # are plain links, so the page works without JavaScript too.
+        first_html, _ = render_blocks(book["chapters"][0]["number"],
+                                      book["chapters"][0]["blocks"])
+        first_n = book["chapters"][0]["number"]
         h1_book = title_vi if not title_en else "%s · %s" % (
             title_vi, title_en)
-        body = ("<p class=\"crumb\"><a href=\"%s/\">%s</a></p>\n"
-                "<div class=\"chapter-meta\"><h1>%s</h1>\n%s</div>\n"
-                "<ol class=\"chaps\">%s</ol>"
-                % (bp, esc(SITE_NAME), esc(h1_book), sub, lis))
+        btns = "".join(
+            "<li><a href=\"%s/%s/%d/\" data-cid=\"%d\" data-n=\"%d\"%s>%d</a></li>"
+            % (bp, book["slug"], n, c, n,
+               " class=\"active\"" if n == first_n else "", n)
+            for n, c in book_cids)
+        ch1_bi = ("%s %d" % (title_vi, first_n) if not title_en
+                  else "%s %d · %s %d" % (title_vi, first_n,
+                                          title_en, first_n))
+        body = (
+            "<div class=\"book-layout\" data-site=\"%s\">\n"
+            "<section class=\"book-main\">\n"
+            "<p class=\"crumb\"><a href=\"%s/\">%s</a></p>\n"
+            "<div class=\"chapter-meta\"><h1>%s</h1>\n%s</div>\n"
+            "<h2 class=\"bk-ch\" id=\"bk-ch-title\">%s</h2>\n"
+            "<div id=\"bk-content\">\n%s\n</div>\n"
+            "</section>\n"
+            "<aside class=\"book-side\">\n"
+            "<p class=\"side-kicker\">%s · Chương</p>\n"
+            "<ol class=\"chap-btns\">%s</ol>\n"
+            "</aside>\n</div>"
+            % (esc(SITE_NAME), bp, esc(SITE_NAME), esc(h1_book), sub,
+               esc(ch1_bi), "\n".join(first_html), esc(title_vi), btns))
         write(os.path.join(out, book["slug"], "index.html"),
               page(bp, "%s | %s" % (h1_book, SITE_NAME),
-                   h1_book, body, ("app.js",), nav_dd))
+                   h1_book, body, ("app.js", "book.js"), nav_dd))
         sitemap_urls.append(root + book["slug"] + "/")
 
     # ---- home -------------------------------------------------------------
     # Daily = deterministic rotation over 1189 chapters, rendered bilingually.
     first_book = sorted(books, key=lambda b: b["position"])[0]
     home = ("<section id=\"daily\"><p class=\"kicker\">"
-            "Song ngữ Việt–Anh · Mỗi ngày một đoạn</p>\n"
-            "<h2 id=\"daily-title\">\u2026</h2>\n"
-            "<div id=\"daily-text\"><p>\u0110ang t\u1ea3i\u2026</p></div>\n"
+            "Song ngữ Việt - Anh · Mỗi ngày một đoạn</p>\n"
+            "<h2 id=\"daily-title\">…</h2>\n"
+            "<div id=\"daily-text\"><p>Đang tải…</p></div>\n"
             "<p><a id=\"daily-link\" href=\"#\">"
-            "\u0110\u1ecdc c\u1ea3 \u0111o\u1ea1n &#8594;</a></p>\n"
+            "Đọc cả đoạn →</a></p>\n"
             "<noscript><p><a href=\"%s/%s/1/\">"
             "%s 1</a></p></noscript></section>"
             % (bp, first_book["slug"], esc(btitle(first_book))))
@@ -283,15 +302,15 @@ def main():
                home, ("app.js", "daily.js"), nav_dd))
 
     # ---- search -----------------------------------------------------------
-    search_body = ("<div class=\"chapter-meta\"><h1>T&igrave;m ki&#7871;m</h1></div>\n"
+    search_body = ("<div class=\"chapter-meta\"><h1>Tìm kiếm</h1></div>\n"
                    "<form id=\"search-form\" class=\"search\">"
                    "<input id=\"q\" name=\"q\" autocomplete=\"off\" "
-                   "placeholder=\"V&iacute; d&#7909;: Gi&ecirc;-h&ocirc;-va\">"
-                   "<button type=\"submit\">T&igrave;m</button></form>\n"
+                   "placeholder=\"Ví dụ: Giê-hô-va\">"
+                   "<button type=\"submit\">Tìm</button></form>\n"
                    "<div id=\"results\"></div>")
     write(os.path.join(out, "tim-kiem", "index.html"),
-          page(bp, "T\u00ecm ki\u1ebfm | %s" % SITE_NAME,
-               "T\u00ecm ki\u1ebfm Kinh Th\u00e1nh", search_body,
+          page(bp, "Tìm kiếm | %s" % SITE_NAME,
+               "Tìm kiếm Kinh Thánh", search_body,
                ("app.js", "search.js"), nav_dd))
 
     # ---- sitemap / robots / 404 -------------------------------------------
@@ -306,9 +325,9 @@ def main():
     write(os.path.join(out, "robots.txt"),
           "User-agent: *\nAllow: /\nSitemap: %ssitemap.xml\n" % root)
     write(os.path.join(out, "404.html"),
-          page(bp, "Kh\u00f4ng t\u00ecm th\u1ea5y | %s" % SITE_NAME, "",
-               "<h1>404</h1><p>Trang b\u1ea1n t\u00ecm kh\u00f4ng t\u1ed3n "
-               "t\u1ea1i. <a href=\"%s/\">V\u1ec1 trang ch\u1ee7</a>.</p>" % bp,
+          page(bp, "Không tìm thấy | %s" % SITE_NAME, "",
+               "<h1>404</h1><p>Trang bạn tìm không tồn "
+               "tại. <a href=\"%s/\">Về trang chủ</a>.</p>" % bp,
                ("app.js",), nav_dd))
 
     # ---- zip ---------------------------------------------------------------

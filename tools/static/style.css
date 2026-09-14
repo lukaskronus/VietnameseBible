@@ -1,15 +1,17 @@
 :root{
-  --bg:#fcfcfb;--bg2:#f3f2ee;--fg:#1c1917;--fg2:#44403c;--mut:#a8a29e;
-  --acc:#92400e;--acc2:#78350f;--acc-hover:#b45309;--acc-bg:rgba(146,64,14,.06);
-  --line:#e7e5e4;--card:#ffffff;--shadow:0 1px 3px rgba(0,0,0,.06);
+  --bg:#fdf8f2;--bg2:#f9efe4;--fg:#57534e;--fg2:#78716c;--mut:#c4b5a5;
+  --acc:#d08c8c;--acc2:#b96f6f;--acc-hover:#bd7676;--acc-bg:rgba(208,140,140,.12);
+  --sage:#a8c3a0;--sky:#a9c6e8;--lav:#c3b2e0;--peach:#f6c89f;
+  --line:#f0e2d3;--card:#fffdf9;--shadow:0 2px 12px rgba(190,150,120,.10);
   --serif:"Noto Serif",Georgia,"Times New Roman",serif;
   --sans:system-ui,-apple-system,"Segoe UI",sans-serif;
   --fs:18px;
 }
 html[data-theme="dark"]{
-  --bg:#1a1918;--bg2:#252321;--fg:#f5f0eb;--fg2:#d6cec5;--mut:#78716c;
-  --acc:#fbbf24;--acc2:#f59e0b;--acc-hover:#fcd34d;--acc-bg:rgba(251,191,36,.1);
-  --line:#3a3633;--card:#211f1d;--shadow:0 1px 3px rgba(0,0,0,.2);
+  --bg:#2e2a26;--bg2:#38302a;--fg:#f3e9dc;--fg2:#d8c9b8;--mut:#8d7f70;
+  --acc:#f0b8ac;--acc2:#e8a090;--acc-hover:#f7c9bd;--acc-bg:rgba(240,184,172,.12);
+  --sage:#a8c3a0;--sky:#a9c6e8;--lav:#c3b2e0;--peach:#f6c89f;
+  --line:#4a4038;--card:#38312b;--shadow:0 2px 12px rgba(0,0,0,.25);
 }
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
 html{scroll-behavior:smooth;-webkit-text-size-adjust:100%}
@@ -25,7 +27,8 @@ a:hover{color:var(--acc-hover);text-decoration:underline}
 
 /* ---- header ---- */
 header.top{
-  border-bottom:1px solid var(--line);background:var(--bg);
+  border-bottom:1px solid var(--line);
+  background:linear-gradient(180deg,var(--card),var(--bg));
   position:sticky;top:0;z-index:100;
   backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);
 }
@@ -73,7 +76,7 @@ nav.main>a:hover,nav.main>.dd:hover{color:var(--acc);text-decoration:none}
 
 /* ---- verse of the day ---- */
 #daily{
-  border:1px solid var(--line);border-radius:12px;
+  border:1px solid var(--line);border-top:4px solid var(--acc);border-radius:16px;
   padding:2.25rem 2.5rem;margin-bottom:3rem;
   background:var(--card);box-shadow:var(--shadow)
 }
@@ -122,7 +125,7 @@ p.reading{
 /* English secondary text: muted, slightly smaller, pairs with VI above */
 p.reading.en{
   color:var(--fg2);font-size:.92em;line-height:1.9;
-  border-left:3px solid var(--line);padding-left:1rem;margin:.2em 0 0;
+  border-left:3px solid var(--peach);padding-left:1rem;margin:.2em 0 0;
   text-align:left
 }
 p.reading.vi{margin-bottom:0}
@@ -135,6 +138,19 @@ p.reading sup[id]{
   cursor:pointer;transition:color .15s
 }
 p.reading sup[id]:hover{opacity:1}
+
+/* ---- book split reader (content left, chapters right, 5:1) ---- */
+.wrap:has(.book-layout){max-width:64rem}
+.book-layout{display:grid;grid-template-columns:minmax(0,5fr) minmax(0,1fr);gap:2rem;align-items:start}
+.book-main{min-width:0}
+.bk-ch{font-size:1.25rem;font-weight:700;font-family:var(--sans);color:var(--fg);margin:0 0 1.25rem;letter-spacing:-.01em}
+.book-side{position:sticky;top:4.5rem;background:var(--card);border:1px solid var(--line);border-radius:14px;padding:1rem .9rem;box-shadow:var(--shadow)}
+.side-kicker{font-family:var(--sans);font-size:.7rem;font-weight:700;color:var(--acc);letter-spacing:.1em;text-transform:uppercase;margin:0 0 .6rem}
+.chap-btns{list-style:none;margin:0;padding:0;display:grid;grid-template-columns:repeat(auto-fill,minmax(2.4rem,1fr));gap:.35rem;max-height:70vh;overflow-y:auto}
+.chap-btns a{display:block;text-align:center;padding:.4rem 0;font-family:var(--sans);font-size:.85rem;font-weight:600;color:var(--fg2);background:var(--bg2);border:1px solid var(--line);border-radius:9px;text-decoration:none;transition:all .15s}
+.chap-btns a:hover{border-color:var(--acc);color:var(--acc);text-decoration:none}
+.chap-btns a.active{background:var(--acc);border-color:var(--acc);color:#fff}
+@media(max-width:760px){.book-layout{grid-template-columns:1fr}.book-side{position:static}.chap-btns{max-height:12rem}}
 
 /* ---- prev / next navigation ---- */
 nav.pn{
