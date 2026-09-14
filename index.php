@@ -1,8 +1,11 @@
 <?php
 // Bilingual daily chapter (VI + EN), sourced from data/xml/*.xml.
 // Default pair: 1925-VI + NASB 1995.
-// Rotation: chapter_id = (days_since_unix_epoch % 1189) + 1, same rule as
-// the static site (tools/build_site.py + tools/static/daily.js).
+// Daily surprise: full-cycle shuffle over all chapters, same rule as the
+// static site (tools/build_site.py + tools/static/daily.js).
+// chapter = ((701 * days_since_unix_epoch + 123) % total) + 1.
+// 701 is coprime to 1189 (= 29*41): every chapter appears exactly once per
+// cycle, in unpredictable order. Same chapter for all visitors each day.
 header('Content-Type: text/html; charset=UTF-8');
 
 // Canonical titles (kept in sync with tools/parse_bible.py).
@@ -46,7 +49,8 @@ try {
     }
     $total = count($map);
     if ($total < 1) throw new Exception('no chapters');
-    $id = (int)(floor(time() / 86400) % $total);
+    $day = (int)floor(time() / 86400);
+    $id = (int)((701 * $day + 123) % $total);
     list($bookNo, $chNo) = $map[$id];
 
     $viVerses = chapter_verses($vi, $bookNo, $chNo);

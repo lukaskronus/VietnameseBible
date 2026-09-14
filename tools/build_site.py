@@ -349,8 +349,8 @@ def main():
         sitemap_urls.append(root + book["slug"] + "/")
 
     # ---- home -------------------------------------------------------------
-    # Daily = deterministic rotation over 1189 chapters, rendered in the
-    # chosen pair (default 1925-VI + NASB 1995) via daily.js + pair.js.
+    # Daily = deterministic full-cycle shuffle over 1189 chapters, rendered
+    # in the chosen pair (default 1925-VI + NASB 1995) via daily.js + pair.js.
     first_book = sorted(books, key=lambda b: b["position"])[0]
     home = (pair_picker()
             + "<section id=\"daily\"><p class=\"kicker\">"

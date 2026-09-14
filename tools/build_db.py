@@ -24,8 +24,8 @@ implement exactly this:
     NFD normalize -> strip combining marks -> d/Ð to d -> lowercase,
     tokens = [a-z0-9]+ runs of length >= 2.
 
-Verse-of-the-day rotation (implemented client-side in Phase 3):
-    chapter_id = (days_since_unix_epoch % total_chapters) + 1
+Verse-of-the-day shuffle (implemented client-side in Phase 3):
+    chapter_id = ((701 * days_since_unix_epoch + 123) % total_chapters) + 1
 (total_chapters is stored in meta and in search_index.json.)
 
 Exit 0 on success, 1 on any error.

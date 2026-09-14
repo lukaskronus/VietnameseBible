@@ -73,7 +73,12 @@ function loadDaily() {
   }
   chs()
     .then(function (list) {
-      var id = (Math.floor(Date.now() / 864e5) % list.length) + 1;
+      // Daily surprise: full-cycle shuffle over all chapters. 701 is coprime
+      // to the chapter count (1189 = 29*41), so (701*day + 123) % N visits
+      // every chapter exactly once per cycle, in unpredictable order.
+      // Keep in sync with index.php (same constants, UTC day number).
+      var day = Math.floor(Date.now() / 864e5);
+      var id = ((701 * day + 123) % list.length) + 1;
       return Promise.all([
         fetch(bp + "/data/tr/" + p.vi + "/ch/" + id + ".json").then(function (r) {
           if (!r.ok) throw 0;
