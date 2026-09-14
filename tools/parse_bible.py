@@ -83,11 +83,11 @@ VI_TITLES = (
     "Ê-xê-chi-ên", "Đa-ni-ên", "Ô-sê", "Giô-ên", "A-mốt", "Áp-đia",
     "Giô-na", "Mi-chê", "Na-hum", "Ha-ba-cúc", "Sô-phô-ni", "A-ghê",
     "Xa-cha-ri", "Ma-la-chi", "Ma-thi-ơ", "Mác", "Lu-ca", "Giăng",
-    "Công-vụ các Sứ-đồ", "Rô-ma", "I Cô-rinh-tô", "II Cô-rinh-tô",
+    "Công vụ các Sứ đồ", "Rô-ma", "I Cô-rinh-tô", "II Cô-rinh-tô",
     "Ga-la-ti", "Ê-phê-sô", "Phi-líp", "Cô-lô-se", "I Tê-sa-lô-ni-ca",
     "II Tê-sa-lô-ni-ca", "I Ti-mô-thê", "II Ti-mô-thê", "Tít",
     "Phi-lê-môn", "Hê-bơ-rơ", "Gia-cơ", "I Phi-e-rơ", "II Phi-e-rơ",
-    "I Giăng", "II Giăng", "III Giăng", "Giu-đe", "Khải-huyền",
+    "I Giăng", "II Giăng", "III Giăng", "Giu-đe", "Khải huyền",
 )
 
 EN_TITLES = (
