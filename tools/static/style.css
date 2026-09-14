@@ -307,6 +307,69 @@ nav.main > .dd:hover {
   color: var(--acc-hover);
 }
 
+/* ---------- Translation pair picker ---------- */
+.pair-picker {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.9rem;
+  align-items: end;
+  background: var(--card);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+  padding: 1rem 1.25rem;
+  margin-bottom: 1.75rem;
+}
+.pair-picker label {
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+  font-family: var(--sans);
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: var(--mut);
+  letter-spacing: 0.04em;
+}
+.pair-picker select {
+  font-family: var(--sans);
+  font-size: 0.95rem;
+  color: var(--fg);
+  background: var(--bg2);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+  padding: 0.5rem 0.7rem;
+  cursor: pointer;
+  outline: none;
+}
+.pair-picker select:focus {
+  border-color: var(--acc);
+}
+
+/* ---------- Translation copyrights (home) ---------- */
+.license {
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: var(--card);
+  box-shadow: var(--shadow);
+  padding: 1.5rem 1.75rem;
+  margin-top: 2.5rem;
+  font-family: var(--sans);
+  font-size: 0.82rem;
+  color: var(--fg2);
+}
+.license ul {
+  margin: 0.6rem 0 0.8rem 1.1rem;
+  padding: 0;
+}
+.license li {
+  margin-bottom: 0.3rem;
+  line-height: 1.6;
+}
+.license p {
+  margin: 0;
+  line-height: 1.7;
+}
+
 /* ---------- Chapter index (home / book list) ---------- */
 .chaps {
   columns: 3;
@@ -373,6 +436,7 @@ p.reading {
   margin: 0;
   line-height: 1.95;
   text-align: justify;
+  text-justify: inter-word;
   hyphens: auto;
   font-family: var(--serif);
 }

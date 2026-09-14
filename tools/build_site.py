@@ -9,13 +9,15 @@ Stdlib only.
 Inputs: Phase 1 bible.json (bilingual text + order), Phase 2 search_index.json.
 Output: complete static site/ and site.zip -- upload to any static host.
 
-URL scheme: / = home (bilingual verse of the day + book grid),
-/<slug>/ = book split reader (chapter 1 embedded, other chapters load
-via book.js), /<slug>/<n>/ = chapter, /tim-kiem/ = search.
+URL scheme: / = home (pair-switchable verse of the day + book grid),
+/<slug>/ = book split reader (default-pair chapter 1 embedded, chapters
+and translations load via book.js + pair.js),
+/<slug>/<n>/ = chapter (default pair, baked), /tim-kiem/ = search.
 Chapter ids 1..N follow canon order; the client verse-of-the-day is:
     chapter_id = (days_since_unix_epoch % total_chapters) + 1
-per-chapter JSON under data/ch/<id>.json feeds it (each verse carries
-both "vi" and "en"; the home widget renders both).
+per-translation chapter JSON under data/tr/<code>/ch/<id>.json feeds the
+switchable views (each verse carries its number and text; the client
+merges one VI file with one EN file).
 
 NOTE: executed by GitHub Actions (cloud) only.
 Local machines are code storage; do not run builds on them.
@@ -33,7 +35,8 @@ from pathlib import Path
 from string import Template
 
 SITE_NAME = "Kinh Thánh Song Ngữ Việt - Anh"
-SITE_DESC = "Kinh Thánh song ngữ Việt - Anh (1934 Vietnamese Bible + NASB)"
+SITE_DESC = ("Kinh Thánh song ngữ Việt - Anh "
+             "(1925, Bản Dịch Mới, Hiệu Đính 2010, ESV, NASB, NET)")
 
 TOOLS_DIR = Path(__file__).resolve().parent
 STATIC_DIR = TOOLS_DIR / "static"
@@ -45,6 +48,7 @@ APP_JS_SRC = (STATIC_DIR / "app.js").read_text("utf-8")
 SEARCH_JS_SRC = (STATIC_DIR / "search.js").read_text("utf-8")
 DAILY_JS_SRC = (STATIC_DIR / "daily.js").read_text("utf-8")
 BOOK_JS_SRC = (STATIC_DIR / "book.js").read_text("utf-8")
+PAIR_JS_SRC = (STATIC_DIR / "pair.js").read_text("utf-8")
 
 
 def minify_css(s):
@@ -102,6 +106,46 @@ def main():
     if not books:
         print("error: no books in %s" % args.json, file=sys.stderr)
         return 1
+    meta = payload.get("meta", {})
+    translations = meta.get("translations", {})
+    default_vi = meta.get("default_vi", "vi1925")
+    default_en = meta.get("default_en", "ennasb")
+    if default_vi not in translations or default_en not in translations:
+        print("error: default pair missing from translations meta",
+              file=sys.stderr)
+        return 1
+
+    def pair_picker():
+        """VI/EN translation switcher (daily widget + book reader)."""
+        def opts(lang, default):
+            return "".join(
+                "<option value=\"%s\"%s>%s</option>"
+                % (code, " selected" if code == default else "",
+                   esc(translations[code].get("label", code)))
+                for code in translations
+                if translations[code].get("lang") == lang)
+        return (
+            "<div class=\"pair-picker\">\n"
+            "<label>Bản tiếng Việt\n"
+            "<select id=\"pair-vi\">%s</select></label>\n"
+            "<label>Bản tiếng Anh\n"
+            "<select id=\"pair-en\">%s</select></label>\n"
+            "</div>" % (opts("vi", default_vi), opts("en", default_en)))
+
+    def license_section():
+        items = "".join(
+            "<li><strong>%s</strong> — %s</li>"
+            % (esc(translations[code].get("label", code)),
+               esc(translations[code].get("copyright", "")))
+            for code in translations)
+        return (
+            "<section class=\"license\">\n"
+            "<p class=\"kicker\">Bản quyền bản dịch</p>\n"
+            "<ul>%s</ul>\n"
+            "<p>Trang web phi thương mại, không quảng cáo. "
+            "Mọi bản dịch thuộc về chủ sở hữu bản quyền tương ứng; "
+            "xin tôn trọng điều khoản sử dụng của từng bản dịch.</p>\n"
+            "</section>" % items)
 
     bp = "/" + args.base_path.strip("/")
     if bp == "/":
@@ -159,6 +203,7 @@ def main():
     write(os.path.join(out, "assets", "search.js"), minify_js(SEARCH_JS_SRC))
     write(os.path.join(out, "assets", "daily.js"), minify_js(DAILY_JS_SRC))
     write(os.path.join(out, "assets", "book.js"), minify_js(BOOK_JS_SRC))
+    write(os.path.join(out, "assets", "pair.js"), minify_js(PAIR_JS_SRC))
     with open(args.index, encoding="utf-8") as f:
         write(os.path.join(out, "data", "search_index.json"), f.read())
     write(os.path.join(out, "data", "chapters.json"),
@@ -168,17 +213,22 @@ def main():
                      ensure_ascii=False, separators=(",", ":")) + "\n")
 
     def render_blocks(ch_number, blocks):
-        """Render bilingual verse-pair HTML + JSON blocks for one chapter."""
-        html_parts, json_parts = [], []
+        """Render bilingual verse-pair HTML for one chapter (default pair).
+
+        Verses empty in BOTH default sides (e.g. 3 John 15, absent from
+        1925-VI and NASB-XML) are skipped in the baked default view; they
+        remain in the per-translation sets for other pairings.
+        """
+        html_parts = []
         for b in blocks:
-            if b["type"] == "heading":
+            if b.get("type") == "heading":
                 h = b.get("en") or b.get("text", "")
                 html_parts.append("<h2 class=\"sec\">%s</h2>" % esc(h))
-                json_parts.append({"t": "h", "x": h,
-                                    "vi": b.get("vi", ""), "en": h})
             else:
                 vi = b.get("vi", b.get("text", ""))
                 en = b.get("en", "")
+                if vi == "" and en == "":
+                    continue
                 pair = (
                     '<div class="verse-pair">'
                     '<p class="reading vi">'
@@ -191,9 +241,7 @@ def main():
                         % (b["number"], esc(en)))
                 pair += "</div>"
                 html_parts.append(pair)
-                json_parts.append({"t": "v", "n": b["number"],
-                                    "x": vi, "vi": vi, "en": en})
-        return html_parts, json_parts
+        return html_parts
 
     # ---- chapter + book pages ---------------------------------------------
     sitemap_urls = [root, root + "tim-kiem/"]
@@ -205,8 +253,7 @@ def main():
         for ch in book["chapters"]:
             cid += 1
             book_cids.append((ch["number"], cid))
-            blocks_html, blocks_json = render_blocks(ch["number"],
-                                                     ch["blocks"])
+            blocks_html = render_blocks(ch["number"], ch["blocks"])
             pn = "<nav class=\"pn\">"
             if cid > 1:
                 pn += "<a href=\"%s\">‹ %s</a>" % (url_of(cid - 1),
@@ -242,19 +289,33 @@ def main():
                        h1_bi, body, ("app.js",), nav_dd))
             sitemap_urls.append(root + "%s/%d/" % (book["slug"],
                                                       ch["number"]))
-            write(os.path.join(out, "data", "ch", str(cid) + ".json"),
-                  json.dumps({"id": cid, "book": title_vi,
-                              "book_en": title_en,
-                              "slug": book["slug"], "n": ch["number"],
-                              "blocks": blocks_json},
-                             ensure_ascii=False, separators=(",", ":")) + "\n")
+            # Per-translation chapter JSON: data/tr/<code>/ch/<id>.json.
+            # The pairing switcher (daily + book reader) fetches one VI
+            # file and one EN file and merges them client-side.
+            for code, tr in translations.items():
+                lang = tr.get("lang")
+                tblocks = [{"t": "v", "n": b["number"],
+                            "x": (b.get("texts", {}).get(code, "")
+                                  if b.get("type") != "heading"
+                                  else (b.get("en") or b.get("text", "")))}
+                           for b in ch["blocks"]]
+                write(os.path.join(out, "data", "tr", code, "ch",
+                                   str(cid) + ".json"),
+                      json.dumps({"id": cid,
+                                  "book": (title_vi if lang == "vi"
+                                           else title_en),
+                                  "slug": book["slug"], "n": ch["number"],
+                                  "blocks": tblocks},
+                                 ensure_ascii=False,
+                                 separators=(",", ":")) + "\n")
 
         # book page: split reader -- chapter content left, chapter buttons
-        # right. Chapter 1 is embedded statically; other chapters load
-        # via book.js (fetch data/ch/<id>.json, no page reload). Buttons
-        # are plain links, so the page works without JavaScript too.
-        first_html, _ = render_blocks(book["chapters"][0]["number"],
-                                      book["chapters"][0]["blocks"])
+        # right. Default-pair chapter 1 is embedded statically; switching
+        # chapters or translations loads data/tr/<code>/ch/<id>.json via
+        # book.js (no page reload). Buttons are plain links, so the page
+        # works without JavaScript too.
+        first_html = render_blocks(book["chapters"][0]["number"],
+                                   book["chapters"][0]["blocks"])
         first_n = book["chapters"][0]["number"]
         h1_book = title_vi if not title_en else "%s · %s" % (
             title_vi, title_en)
@@ -271,6 +332,7 @@ def main():
             "<section class=\"book-main\">\n"
             "<p class=\"crumb\"><a href=\"%s/\">%s</a></p>\n"
             "<div class=\"chapter-meta\"><h1>%s</h1>\n%s</div>\n"
+            "%s\n"
             "<h2 class=\"bk-ch\" id=\"bk-ch-title\">%s</h2>\n"
             "<div id=\"bk-content\">\n%s\n</div>\n"
             "</section>\n"
@@ -279,27 +341,31 @@ def main():
             "<ol class=\"chap-btns\">%s</ol>\n"
             "</aside>\n</div>"
             % (esc(SITE_NAME), bp, esc(SITE_NAME), esc(h1_book), sub,
+               pair_picker(),
                esc(ch1_bi), "\n".join(first_html), esc(title_vi), btns))
         write(os.path.join(out, book["slug"], "index.html"),
               page(bp, "%s | %s" % (h1_book, SITE_NAME),
-                   h1_book, body, ("app.js", "book.js"), nav_dd))
+                   h1_book, body, ("app.js", "pair.js", "book.js"), nav_dd))
         sitemap_urls.append(root + book["slug"] + "/")
 
     # ---- home -------------------------------------------------------------
-    # Daily = deterministic rotation over 1189 chapters, rendered bilingually.
+    # Daily = deterministic rotation over 1189 chapters, rendered in the
+    # chosen pair (default 1925-VI + NASB 1995) via daily.js + pair.js.
     first_book = sorted(books, key=lambda b: b["position"])[0]
-    home = ("<section id=\"daily\"><p class=\"kicker\">"
+    home = (pair_picker()
+            + "<section id=\"daily\"><p class=\"kicker\">"
             "Song ngữ Việt - Anh · Mỗi ngày một đoạn</p>\n"
             "<h2 id=\"daily-title\">…</h2>\n"
             "<div id=\"daily-text\"><p>Đang tải…</p></div>\n"
             "<p><a id=\"daily-link\" href=\"#\">"
             "Đọc cả đoạn →</a></p>\n"
             "<noscript><p><a href=\"%s/%s/1/\">"
-            "%s 1</a></p></noscript></section>"
-            % (bp, first_book["slug"], esc(btitle(first_book))))
+            "%s 1</a></p></noscript></section>\n"
+            % (bp, first_book["slug"], esc(btitle(first_book)))
+            + license_section())
     write(os.path.join(out, "index.html"),
           page(bp, SITE_NAME, SITE_DESC,
-               home, ("app.js", "daily.js"), nav_dd))
+               home, ("app.js", "pair.js", "daily.js"), nav_dd))
 
     # ---- search -----------------------------------------------------------
     search_body = ("<div class=\"chapter-meta\"><h1>Tìm kiếm</h1></div>\n"
