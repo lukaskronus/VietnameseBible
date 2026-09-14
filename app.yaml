@@ -1,0 +1,13 @@
+# Wasmer Edge deploy target (Phase 4) -- exported from the dashboard.
+# `wasmer deploy` publishes each build as a new version of this app.
+annotations:
+  anybuild.run/config:
+    name: site
+  anybuild.run/provider: staticfile
+  anybuild.run/version: 0.28.4
+  wasmer.io/version: 7.4.1
+app_id: da_2dAIdtrUd5VV
+kind: wasmer.io/App.v0
+name: dailyverse
+owner: kobayashi123
+package: sha256:e84b781eea55efa8816f8cd058f0989f79485339b6ffde896b078697ba615fbf

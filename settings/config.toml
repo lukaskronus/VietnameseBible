@@ -1,0 +1,30 @@
+[general]
+
+#### Address & Root dir
+host = "::"
+port = 8080
+root = "/public"
+
+#### Logging
+log-level = "error"
+
+#### Cache Control headers
+cache-control-headers = true
+
+#### Auto Compression
+compression = true
+
+#### Directory listing (off: don't expose the file tree of the built site)
+directory-listing = false
+
+#### Redirect to trailing slash in the requested directory uri
+redirect-trailing-slash = true
+
+#### Check for existing pre-compressed files
+compression-static = true
+
+#### Log request Remote Address if available
+log-remote-address = false
+
+#### List of index files
+# index-files = "index.html, index.htm"
