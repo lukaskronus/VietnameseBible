@@ -2,7 +2,7 @@
 # `wasmer deploy --publish-package` bundles [fs] dirs below and publishes a
 # new version; the app then serves it via Static Web Server + settings/config.toml.
 [package]
-name = "kobayashi123/dailyverse"
+name = "kobayashi123/dailyverse-site"
 version = "0.1.0"
 description = "Daily Vietnamese-English Bible verses (static site)"
 
