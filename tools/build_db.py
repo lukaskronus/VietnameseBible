@@ -102,7 +102,10 @@ def fold(text):
     """Fold Vietnamese text for diacritic-insensitive matching."""
     norm = unicodedata.normalize("NFD", text)
     norm = "".join(c for c in norm if unicodedata.category(c) != "Mn")
-    return norm.replace("\u0111", "d").replace("\u0110", "D").lower()
+    # 1925 XML uses U+00D0/U+00F0 for Đ/đ in places; fold those too.
+    for a, b in (("đ", "d"), ("Đ", "D"), ("ð", "d"), ("Ð", "D")):
+        norm = norm.replace(a, b)
+    return norm.lower()
 
 
 def tokenize(folded):

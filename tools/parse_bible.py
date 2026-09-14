@@ -1,54 +1,52 @@
 #!/usr/bin/env python3
-"""Parse bilingual Bible sources data/viet.sqlite3 + data/nasb.sqlite3.
+"""Parse bilingual Bible sources in data/xml/*.xml into structured JSON.
 
 Phase 1 of the static-site pipeline. Stdlib only.
 
-    python tools/parse_bible.py --data data --out build
+    python tools/parse_bible.py --data data/xml --out build
+    (``--data`` may also point at ``data/``; the xml/ subdirectory is
+    searched automatically.)
 
-Reads the two SQLite sources (same schema: books / chapters / verses /
-metadata) and merges them into one bilingual canon:
+Reads the six XML translations (same schema everywhere)::
 
-    data/viet.sqlite3   Vietnamese (1934 Vietnamese Bible) -- primary
-    data/nasb.sqlite3   English (NASB) -- secondary
+    <bible> -> <testament name> -> <book number=1..66>
+        -> <chapter number> -> <verse number>text</verse>
 
-Both DBs share 66 books, 1189 chapters, OSIS book codes and chapter ids
-1..N in canon order. Verses are keyed by (book_osis, chapter, verse) where
-the REAL `verse` column encodes chapter.verse (e.g. 1.001 = ch 1 v 1).
+and merges them into one canon keyed by (book, chapter, verse). Verse
+numbers are unioned across translations; a version missing a verse
+(e.g. 3 John 15 in some editions) yields an empty string on that side.
+
+Book titles are canonical lists in this file (the XML carries numbers
+only): Vietnamese titles as approved by the maintainer, standard English
+titles for the secondary side. Slugs derive from the Vietnamese titles.
 
 Outputs (under --out):
     bible.json              structured books -> chapters -> blocks
-    validation_report.md    per-book counts plus every anomaly found
+    validation_report.md    per-translation counts plus every anomaly found
 
-Block model (bilingual, backward compatible):
-    {"type": "heading", "text": <en>, "vi": "", "en": <en>}
-    {"type": "verse", "number": N, "text": <vi>, "vi": <vi>, "en": <en>}
-`text` always mirrors the Vietnamese side so Phase 2/3 readers that only
-look at `text` keep working.
+Block model (backward compatible with Phase 2/3):
+    {"type": "verse", "number": N,
+     "text": <vi default>, "vi": <vi default>, "en": <en default>,
+     "texts": {<code>: <text or ""> for all six translations}}
 
-Headings: viet.sqlite3 chapters carry no headings; NASB chapters.content
-HTML carries <h3>/<h4> pericopes. They are extracted (tags stripped) and
-attached before the verse whose `class="text BOOK-CH-V"` marker they wrap.
-Vietnamese heading text is unavailable, so heading blocks carry en only.
-
-Daily rotation is unchanged (client-side):
-    chapter_id = (days_since_unix_epoch % total_chapters) + 1
-The home page now renders that chapter bilingually (VI + EN).
+Default pair: vi1925 (1925-VI) + ennasb (NASB 1995). The pairing switcher
+(daily widget + book reader) serves the other four from data/tr/ sets
+built in Phase 3.
 
 Exit code: 0 = parsed (warnings, if any, are listed in the report),
-           1 = hard errors (missing DBs, empty books, zero chapters).
+           1 = hard errors (missing files, empty books, zero chapters).
 
 NOTE: this script is executed by GitHub Actions (cloud) only.
 Local machines are code storage; do not run builds on them.
 """
 
 import argparse
-import html as htmlmod
 import json
 import os
 import re
-import sqlite3
 import sys
 import unicodedata
+import xml.etree.ElementTree as ET
 from datetime import datetime, timezone
 
 # Legacy row count of data/bible.sql, used as an informational cross-check only.
@@ -56,9 +54,57 @@ LEGACY_CHAPTER_COUNT = 1189
 
 TESTAMENT_LABELS = {"OT": "Cựu Ước", "NT": "Tân Ước"}
 
-HEADING_RE = re.compile(r"<h[34][^>]*>(.*?)</h[34]>", re.S)
-TAG_RE = re.compile(r"<[^>]+>")
-VERSE_REF_RE = re.compile(r'class="text [A-Za-z0-9]+-(\d+)-(\d+)')
+DEFAULT_VI = "vi1925"
+DEFAULT_EN = "ennasb"
+
+# code -> (filename, short UI label, language). Copyright lines are harvested
+# from each file's <bible> header at parse time (see meta.translations).
+TRANSLATIONS = {
+    "vi1925": ("VietnameseBible.xml", "Tiếng Việt 1925", "vi"),
+    "vinvb": ("VietnameseNVBBible.xml", "Bản Dịch Mới 2002", "vi"),
+    "vivie": ("VietnameseVIEBible.xml", "Hiệu Đính 2010", "vi"),
+    "enesv": ("EnglishESVBible.xml", "ESV 2016", "en"),
+    "ennasb": ("EnglishNASBBible.xml", "NASB 1995", "en"),
+    "ennet": ("EnglishNETBible.xml", "NET 2005", "en"),
+}
+
+OSIS = ("Gen Exod Lev Num Deut Josh Judg Ruth 1Sam 2Sam 1Kgs 2Kgs 1Chr "
+        "2Chr Ezra Neh Esth Job Ps Prov Eccl Song Isa Jer Lam Ezek Dan Hos "
+        "Joel Amos Obad Jonah Mic Nah Hab Zeph Hag Zech Mal Matt Mark Luke "
+        "John Acts Rom 1Cor 2Cor Gal Eph Phil Col 1Thess 2Thess 1Tim 2Tim "
+        "Titus Phlm Heb Jas 1Pet 2Pet 1John 2John 3John Jude Rev").split()
+
+VI_TITLES = (
+    "Sáng thế Ký", "Xuất Ê-díp-tô Ký", "Lê-vi Ký", "Dân-số Ký",
+    "Phục truyền Luật lệ Ký", "Giô-suê", "Các Quan Xét", "Ru-tơ",
+    "I Sa-mu-ên", "II Sa-mu-ên", "I Các Vua", "II Các Vua", "I Sử ký",
+    "II Sử ký", "E-xơ-ra", "Nê-hê-mi", "Ê-xơ-tê", "Gióp", "Thi thiên",
+    "Châm ngôn", "Truyền đạo", "Nhã ca", "Ê-sai", "Giê-rê-mi", "Ca-thương",
+    "Ê-xê-chi-ên", "Đa-ni-ên", "Ô-sê", "Giô-ên", "A-mốt", "Áp-đia",
+    "Giô-na", "Mi-chê", "Na-hum", "Ha-ba-cúc", "Sô-phô-ni", "A-ghê",
+    "Xa-cha-ri", "Ma-la-chi", "Ma-thi-ơ", "Mác", "Lu-ca", "Giăng",
+    "Công-vụ các Sứ-đồ", "Rô-ma", "I Cô-rinh-tô", "II Cô-rinh-tô",
+    "Ga-la-ti", "Ê-phê-sô", "Phi-líp", "Cô-lô-se", "I Tê-sa-lô-ni-ca",
+    "II Tê-sa-lô-ni-ca", "I Ti-mô-thê", "II Ti-mô-thê", "Tít",
+    "Phi-lê-môn", "Hê-bơ-rơ", "Gia-cơ", "I Phi-e-rơ", "II Phi-e-rơ",
+    "I Giăng", "II Giăng", "III Giăng", "Giu-đe", "Khải-huyền",
+)
+
+EN_TITLES = (
+    "Genesis", "Exodus", "Leviticus", "Numbers", "Deuteronomy", "Joshua",
+    "Judges", "Ruth", "1 Samuel", "2 Samuel", "1 Kings", "2 Kings",
+    "1 Chronicles", "2 Chronicles", "Ezra", "Nehemiah", "Esther", "Job",
+    "Psalm", "Proverbs", "Ecclesiastes", "Song of Solomon", "Isaiah",
+    "Jeremiah", "Lamentations", "Ezekiel", "Daniel", "Hosea", "Joel",
+    "Amos", "Obadiah", "Jonah", "Micah", "Nahum", "Habakkuk", "Zephaniah",
+    "Haggai", "Zechariah", "Malachi", "Matthew", "Mark", "Luke", "John",
+    "Acts", "Romans", "1 Corinthians", "2 Corinthians", "Galatians",
+    "Ephesians", "Philippians", "Colossians", "1 Thessalonians",
+    "2 Thessalonians", "1 Timothy", "2 Timothy", "Titus", "Philemon",
+    "Hebrews", "James", "1 Peter", "2 Peter", "1 John", "2 John", "3 John",
+    "Jude", "Revelation",
+)
+
 WS_RE = re.compile(r"\s+")
 
 
@@ -75,150 +121,139 @@ def slugify(text):
     return slug or "book"
 
 
-def decode_verse(vfloat):
-    """Split REAL chapter.verse (e.g. 1.001, 1.01, 119.176) -> (ch, v)."""
-    ch = int(vfloat)
-    v = int(round((float(vfloat) - ch) * 1000))
-    return ch, v
+def clean(text):
+    return WS_RE.sub(" ", text or "").strip()
 
 
-def clean_verse_text(text):
-    """Collapse newlines/whitespace; strip trailing newlines."""
-    if text is None:
-        return ""
-    return WS_RE.sub(" ", text.replace("\r", " ").replace("\n", " ")).strip()
+def resolve(path, filename):
+    """Find filename under path or path/xml (lets --data be data/ or xml/)."""
+    for cand in (os.path.join(path, filename),
+                 os.path.join(path, "xml", filename)):
+        if os.path.isfile(cand):
+            return cand
+    return os.path.join(path, filename)
 
 
-def strip_heading_prefix(en_text, headings_for_verse):
-    """Remove a duplicated pericope heading ('The Creation\\nIn the...').
-
-    NASB verses.unformatted repeats the <h3> heading as the first line.
-    If the first line matches a heading attached to this verse, drop it and
-    keep the real verse text; remaining newlines become spaces.
-    """
-    if not en_text:
-        return ""
-    parts = en_text.split("\n")
-    if len(parts) > 1:
-        first = WS_RE.sub(" ", parts[0]).strip()
-        for h in headings_for_verse:
-            if first == h or first.lower() == h.lower():
-                return clean_verse_text("\n".join(parts[1:]))
-        # Fallback heuristic: a short first line with no sentence-ending
-        # punctuation that exactly matches a heading elsewhere in the
-        # chapter is also a heading repeat. (Poetry lines end with
-        # punctuation or are long, so they survive this check.)
-        if len(first) <= 80 and not re.search(r"[.!?;:\"”’]$", first):
-            for h in headings_for_verse:
-                if first == h:
-                    return clean_verse_text("\n".join(parts[1:]))
-    return clean_verse_text(en_text)
-
-
-def extract_headings(nasb_content):
-    """Return {verse_number: [heading, ...]} for one NASB chapter HTML.
-
-    Each <h3>/<h4> wraps a <span class="text BOOK-CH-V"> marker that tells
-    which verse it precedes. Tags are stripped, entities unescaped.
-    """
-    out = {}
-    if not nasb_content:
-        return out
-    for m in HEADING_RE.finditer(nasb_content):
-        inner = m.group(1)
-        text = htmlmod.unescape(TAG_RE.sub("", inner))
-        text = WS_RE.sub(" ", text).strip()
-        if not text:
-            continue
-        vm = VERSE_REF_RE.search(m.group(0))
-        vnum = int(vm.group(2)) if vm else None
-        out.setdefault(vnum, []).append(text)
-    return out
-
-
-def load_db(path):
-    con = sqlite3.connect(path)
-    con.row_factory = sqlite3.Row
-    books = [dict(r) for r in
-             con.execute("SELECT number, osis, human, chapters FROM books "
-                         "ORDER BY number")]
-    chapters = [dict(r) for r in
-                con.execute("SELECT id, reference_osis, reference_human, "
-                            "content FROM chapters ORDER BY id")]
+def parse_xml(path, warnings):
+    """Return ({(book, ch): {vnum: text}}, header_dict)."""
     verses = {}
-    for r in con.execute("SELECT book, verse, unformatted FROM verses"):
-        ch, v = decode_verse(r["verse"])
-        verses[(r["book"], ch, v)] = r["unformatted"] or ""
-    meta = {r["name"]: r["value"] for r in
-            con.execute("SELECT name, value FROM metadata")}
-    con.close()
-    return books, chapters, verses, meta
+    try:
+        root = ET.parse(path).getroot()
+    except ET.ParseError as e:
+        warnings.append("%s: XML parse error: %s"
+                        % (os.path.basename(path), e))
+        return {}, {}
+    header = dict(root.attrib)
+    for t in root.findall("testament"):
+        for b in t.findall("book"):
+            try:
+                bn = int(b.get("number"))
+            except (TypeError, ValueError):
+                warnings.append("%s: book with bad number %r"
+                                % (os.path.basename(path), b.get("number")))
+                continue
+            for c in b.findall("chapter"):
+                try:
+                    cn = int(c.get("number"))
+                except (TypeError, ValueError):
+                    warnings.append("%s: book %d chapter with bad number %r"
+                                    % (os.path.basename(path), bn,
+                                       c.get("number")))
+                    continue
+                slot = verses.setdefault((bn, cn), {})
+                for v in c.findall("verse"):
+                    try:
+                        vn = int(v.get("number"))
+                    except (TypeError, ValueError):
+                        warnings.append(
+                            "%s: book %d ch %d verse with bad number %r"
+                            % (os.path.basename(path), bn, cn,
+                               v.get("number")))
+                        continue
+                    text = clean("".join(v.itertext()))
+                    if vn in slot:
+                        warnings.append(
+                            "%s: book %d ch %d duplicate verse %d"
+                            % (os.path.basename(path), bn, cn, vn))
+                    slot[vn] = text
+    return verses, header
 
 
 def main():
     ap = argparse.ArgumentParser(description=__doc__.splitlines()[0])
-    ap.add_argument("--data", default="data", help="source data directory")
-    ap.add_argument("--viet", default=None, help="path to viet.sqlite3 "
-                    "(default: <data>/viet.sqlite3)")
-    ap.add_argument("--nasb", default=None, help="path to nasb.sqlite3 "
-                    "(default: <data>/nasb.sqlite3)")
+    ap.add_argument("--data", default="data/xml",
+                    help="source data directory (data/xml or data)")
     ap.add_argument("--out", default="build", help="output directory (CI only)")
     args = ap.parse_args()
 
-    viet_path = args.viet or os.path.join(args.data, "viet.sqlite3")
-    nasb_path = args.nasb or os.path.join(args.data, "nasb.sqlite3")
     errors, warnings = [], []
-    for label, p in (("viet", viet_path), ("nasb", nasb_path)):
-        if not os.path.isfile(p):
-            errors.append("%s source not found: %s" % (label, p))
+    if len(VI_TITLES) != 66 or len(EN_TITLES) != 66 or len(OSIS) != 66:
+        errors.append("canonical title tables must each hold 66 entries")
+        print("error: %s" % errors[0], file=sys.stderr)
+        return 1
+
+    per_tr, headers = {}, {}
+    for code, (fn, _label, _lang) in TRANSLATIONS.items():
+        path = resolve(args.data, fn)
+        if not os.path.isfile(path):
+            errors.append("source not found: %s" % path)
+            continue
+        verses, header = parse_xml(path, warnings)
+        per_tr[code] = verses
+        headers[code] = header
 
     if errors:
         for e in errors:
             print("error: %s" % e, file=sys.stderr)
         return 1
 
-    vb, vch, vverses, vmeta = load_db(viet_path)
-    nb, nch, nverses, nmeta = load_db(nasb_path)
+    counts = {c: sum(len(v) for v in verses.values())
+              for c, verses in per_tr.items()}
 
-    # ---- canon consistency checks -------------------------------------
-    if len(vb) != 66 or len(nb) != 66:
-        errors.append("expected 66 books, got viet=%d nasb=%d"
-                      % (len(vb), len(nb)))
-    v_osis = [b["osis"] for b in vb]
-    n_osis = [b["osis"] for b in nb]
-    if v_osis != n_osis:
-        errors.append("book order mismatch between viet and nasb sources")
-        warnings.append("viet order: %s" % ",".join(v_osis))
-        warnings.append("nasb order: %s" % ",".join(n_osis))
-    for v, n in zip(vb, nb):
-        if v["chapters"] != n["chapters"]:
-            warnings.append(
-                "%s: chapter count differs (viet=%d nasb=%d)"
-                % (v["osis"], v["chapters"], n["chapters"]))
-    if len(vch) != len(nch):
-        errors.append("chapter count differs (viet=%d nasb=%d)"
-                      % (len(vch), len(nch)))
-
-    n_map = {(b["osis"]): b for b in nb}
-    nasb_ch_content = {r["reference_osis"]: r["content"] for r in nch}
+    # ---- canon consistency: union of (book, ch) across translations ------
+    all_chapters = set()
+    for verses in per_tr.values():
+        all_chapters.update(verses.keys())
+    n_chapters = len(all_chapters)
+    for code, verses in per_tr.items():
+        missing = sorted(all_chapters - set(verses.keys()))
+        for bn, cn in missing[:10]:
+            warnings.append("%s: missing whole chapter %d.%d"
+                            % (code, bn, cn))
+        if len(missing) > 10:
+            warnings.append("%s: ... and %d more missing chapters"
+                            % (code, len(missing) - 10))
 
     books, report_rows = [], []
-    total_chapters = total_verses = total_headings = 0
-    missing_vi = missing_en = 0
+    total_verses = 0
+    missing_cells = 0  # translation-chapter-verse slots empty somewhere
     seen_slugs = {}
+    tr_meta = {}
+    for code, (fn, label, lang) in TRANSLATIONS.items():
+        h = headers.get(code, {})
+        credit = " ".join(clean(h.get(k, ""))
+                          for k in ("translation", "status", "info")).strip()
+        tr_meta[code] = {"file": fn, "label": label, "lang": lang,
+                         "copyright": credit or label}
 
-    for pos, v in enumerate(vb, start=1):
-        osis = v["osis"]
-        n = n_map.get(osis, {})
-        title_vi = v["human"]
-        title_en = n.get("human", osis)
-        slug = slugify(title_vi or osis)
+    for pos in range(1, 67):
+        osis = OSIS[pos - 1]
+        title_vi, title_en = VI_TITLES[pos - 1], EN_TITLES[pos - 1]
+        slug = slugify(title_vi)
         if slug in seen_slugs:
             warnings.append("%s: duplicate slug %r (also %s); suffixing"
                             % (osis, slug, seen_slugs[slug]))
             slug = "%s-%d" % (slug, pos)
         seen_slugs[slug] = osis
 
+        ch_numbers = sorted(c for (b, c) in all_chapters if b == pos)
+        if not ch_numbers:
+            errors.append("%s: no chapters in any translation" % osis)
+            continue
+        # Warn on gaps (1..max expected contiguous).
+        if ch_numbers != list(range(1, max(ch_numbers) + 1)):
+            warnings.append("%s: non-contiguous chapters: %s..."
+                            % (osis, ch_numbers[:8]))
         book = {
             "code": osis,
             "position": pos,
@@ -231,127 +266,88 @@ def main():
             "range": None,
             "chapters": [],
         }
-        n_chapters = int(v["chapters"])
-        for ch_no in range(1, n_chapters + 1):
-            ref = "%s.%d" % (osis, ch_no)
-            headings = extract_headings(nasb_ch_content.get(ref, ""))
-            # Headings keyed None (no verse marker) attach to chapter start.
-            pending_start = headings.pop(None, [])
-            blocks = []
-            for h in pending_start:
-                blocks.append({"type": "heading", "text": h,
-                               "vi": "", "en": h})
-                total_headings += 1
-            # Verse numbers present in either source for this chapter.
-            vnums = sorted({vv for (b, c, vv) in vverses if b == osis
-                            and c == ch_no} |
-                           {vv for (b, c, vv) in nverses if b == osis
-                            and c == ch_no})
+        n_v = 0
+        for cn in ch_numbers:
+            vnums = sorted({vn for code in TRANSLATIONS
+                            for vn in per_tr[code].get((pos, cn), {})})
             if not vnums:
-                errors.append("%s ch %d: no verses in either source" % (osis,
-                                                                        ch_no))
+                errors.append("%s ch %d: no verses in any translation"
+                              % (osis, cn))
                 continue
-            for vnum in vnums:
-                vi_raw = vverses.get((osis, ch_no, vnum))
-                en_raw = nverses.get((osis, ch_no, vnum))
-                if vi_raw is None:
-                    missing_vi += 1
+            blocks = []
+            for vn in vnums:
+                texts = {code: per_tr[code].get((pos, cn), {}).get(vn, "")
+                         for code in TRANSLATIONS}
+                if any(t == "" for t in texts.values()):
+                    missing_cells += 1
+                vi = texts[DEFAULT_VI]
+                en = texts[DEFAULT_EN]
+                if vi == "" or en == "":
+                    missing = [c for c, t in texts.items() if t == ""]
                     warnings.append(
-                        "%s %d:%d: missing in viet.sqlite3 "
-                        "(EN only)" % (osis, ch_no, vnum))
-                if en_raw is None:
-                    missing_en += 1
-                    warnings.append(
-                        "%s %d:%d: missing in nasb.sqlite3 "
-                        "(VI only)" % (osis, ch_no, vnum))
-                for h in headings.get(vnum, []):
-                    blocks.append({"type": "heading", "text": h,
-                                   "vi": "", "en": h})
-                    total_headings += 1
-                vi = clean_verse_text(vi_raw or "")
-                en = strip_heading_prefix(en_raw or "",
-                                          headings.get(vnum, []))
-                blocks.append({"type": "verse", "number": vnum,
-                               "text": vi, "vi": vi, "en": en})
+                        "%s %d:%d: missing in %s"
+                        % (osis, cn, vn, ",".join(missing)))
+                blocks.append({"type": "verse", "number": vn,
+                               "text": vi, "vi": vi, "en": en,
+                               "texts": texts})
+                n_v += 1
                 total_verses += 1
-            book["chapters"].append({"number": ch_no, "blocks": blocks})
-            total_chapters += 1
-
+            book["chapters"].append({"number": cn, "blocks": blocks})
         books.append(book)
-        n_v = sum(1 for c in book["chapters"] for b in c["blocks"]
-                  if b["type"] == "verse")
-        n_h = sum(1 for c in book["chapters"] for b in c["blocks"]
-                  if b["type"] == "heading")
         report_rows.append((pos, osis, title_vi, title_en,
-                            book["testament"], len(book["chapters"]),
-                            n_v, n_h, "ok"))
+                            book["testament"], len(book["chapters"]), n_v,
+                            "ok"))
 
-    if not books or total_chapters == 0 or total_verses == 0:
+    if not books or n_chapters == 0 or total_verses == 0:
         errors.append("no books/chapters/verses parsed")
+    if errors:
+        for e in errors:
+            print("error: %s" % e, file=sys.stderr)
+        return 1
 
     os.makedirs(args.out, exist_ok=True)
     payload = {
         "meta": {
             "generated_utc": datetime.now(timezone.utc).isoformat(),
-            "generator": "tools/parse_bible.py (phase 1, bilingual sqlite)",
+            "generator": "tools/parse_bible.py (phase 1, xml)",
             "books": len(books),
-            "total_chapters": total_chapters,
+            "total_chapters": n_chapters,
             "total_verses": total_verses,
-            "total_headings": total_headings,
+            "total_headings": 0,
             "testaments": TESTAMENT_LABELS,
-            "sources": {
-                "vi": "%s (%s)" % (vmeta.get("fullname", "?"),
-                                   vmeta.get("name", "?")),
-                "en": "%s (%s)" % (nmeta.get("fullname", "?"),
-                                   nmeta.get("name", "?")),
-            },
-            "missing_vi": missing_vi,
-            "missing_en": missing_en,
+            "translations": tr_meta,
+            "default_vi": DEFAULT_VI,
+            "default_en": DEFAULT_EN,
+            "counts": counts,
         },
         "books": books,
     }
     json_path = os.path.join(args.out, "bible.json")
     with open(json_path, "w", encoding="utf-8") as f:
-        json.dump(payload, f, ensure_ascii=False, indent=2)
+        json.dump(payload, f, ensure_ascii=False, separators=(",", ":"))
         f.write("\n")
-
-    # ---- legacy txt note ------------------------------------------------
-    legacy_txt = sorted(f for f in os.listdir(args.data)
-                        if f.endswith(".txt")) if os.path.isdir(args.data) \
-        else []
-    legacy_note = ("Legacy data/*.txt + list.txt are no longer read; "
-                   "sources are viet.sqlite3 + nasb.sqlite3.")
 
     # ---- validation report ----------------------------------------------
     rep_path = os.path.join(args.out, "validation_report.md")
     with open(rep_path, "w", encoding="utf-8") as f:
-        f.write("# Validation report (Phase 1 parser, bilingual)\n\n")
+        f.write("# Validation report (Phase 1 parser, xml)\n\n")
         f.write("Generated: %s UTC\n\n"
                 % datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M"))
         f.write("## Summary\n\n")
         f.write("- Books parsed: %d\n" % len(books))
         f.write("- Chapters: %d (legacy bible.sql: %d) %s\n" % (
-            total_chapters, LEGACY_CHAPTER_COUNT,
-            "MATCH" if total_chapters == LEGACY_CHAPTER_COUNT
+            n_chapters, LEGACY_CHAPTER_COUNT,
+            "MATCH" if n_chapters == LEGACY_CHAPTER_COUNT
             else "**DIFFERS - investigate**"))
-        f.write("- Verses: %d, Headings: %d\n"
-                % (total_verses, total_headings))
-        f.write("- Missing VI: %d, Missing EN: %d\n"
-                % (missing_vi, missing_en))
+        f.write("- Verses (union): %d\n" % total_verses)
+        for code in TRANSLATIONS:
+            f.write("- %s verses: %d\n" % (code, counts.get(code, 0)))
+        f.write("- Missing translation slots: %d\n" % missing_cells)
         f.write("- Warnings: %d, Errors: %d\n\n"
                 % (len(warnings), len(errors)))
-        f.write("Sources: VI `%s`, EN `%s`.\n\n"
-                % (vmeta.get("fullname", "?"), nmeta.get("fullname", "?")))
-        f.write("%s\n\n" % legacy_note)
-        if legacy_txt:
-            f.write("Legacy txt files present but ignored: %d "
-                    "(e.g. %s).\n\n"
-                    % (len(legacy_txt), ", ".join(legacy_txt[:5])))
-        if errors:
-            f.write("## Errors\n\n")
-            for e in errors:
-                f.write("- %s\n" % e)
-            f.write("\n")
+        f.write("Default pair: %s + %s.\n\n" % (DEFAULT_VI, DEFAULT_EN))
+        f.write("Sources: `data/xml/` (6 files). "
+                "Legacy `data/txt/` and `data/sqlite/` are not read.\n\n")
         if warnings:
             f.write("## Warnings\n\n")
             for w in warnings[:200]:
@@ -361,18 +357,18 @@ def main():
             f.write("\n")
         f.write("## Books\n\n")
         f.write("| # | osis | title_vi | title_en | test. | ch | verses |"
-                " headings | status |\n")
+                " status |\n")
         f.write("|---|------|----------|----------|-------|----|--------|"
-                "----------|--------|\n")
+                "--------|\n")
         for row in report_rows:
-            f.write("| %s | %s | %s | %s | %s | %s | %s | %s | %s |\n" % row)
+            f.write("| %s | %s | %s | %s | %s | %s | %s | %s |\n" % row)
 
-    print("books=%d chapters=%d verses=%d headings=%d "
-          "missing_vi=%d missing_en=%d warnings=%d errors=%d"
-          % (len(books), total_chapters, total_verses, total_headings,
-             missing_vi, missing_en, len(warnings), len(errors)))
+    print("books=%d chapters=%d verses=%d missing_slots=%d "
+          "warnings=%d errors=%d"
+          % (len(books), n_chapters, total_verses, missing_cells,
+             len(warnings), len(errors)))
     print("wrote %s and %s" % (json_path, rep_path))
-    return 1 if errors else 0
+    return 0
 
 
 if __name__ == "__main__":
