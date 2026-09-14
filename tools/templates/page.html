@@ -2,28 +2,53 @@
 <html lang="vi">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="kt-base" content="${bp}">
 <meta name="description" content="${desc}">
 <title>${title}</title>
+
+<!-- Elegant typography: Spectral for scripture, Source Sans 3 for interface -->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Spectral:ital,wght@0,400;0,500;0,600;0,700;1,400;1,500&family=Source+Sans+3:wght@400;500;600;700&display=swap" rel="stylesheet">
+
 <link rel="stylesheet" href="${bp}/assets/style.css">
-<script>try{var t=localStorage.getItem("kt-theme");if(t){document.documentElement.dataset.theme=t}var f=localStorage.getItem("kt-fs");if(f){document.documentElement.style.setProperty("--fs",f+"px")}}catch(e){}</script>
+
+<script>
+try {
+  var t = localStorage.getItem("kt-theme");
+  if (t) document.documentElement.dataset.theme = t;
+  var f = localStorage.getItem("kt-fs");
+  if (f) document.documentElement.style.setProperty("--fs", f + "px");
+} catch (e) {}
+</script>
 ${head_extra}
 </head>
 <body>
-<header class="top"><div class="bar">
-<a class="brand" href="${bp}/">Kinh Th<span>e</span>nh Song Ngữ Việt - Anh</a>
-<nav class="main"><a href="${bp}/">Trang chủ</a>
-${nav_extra}
-<a href="${bp}/tim-kiem/">Tìm kiếm</a></nav>
-<span class="controls">
-<button id="fs-dec" title="Chữ nhỏ">A-</button>
-<button id="fs-inc" title="Chữ lớn">A+</button>
-<button id="theme-btn" title="Sáng/tối">◑</button>
-</span></div></header>
+<header class="top">
+  <div class="bar">
+    <a class="brand" href="${bp}/">Kinh Th<span>e</span>nh Song Ngữ Việt – Anh</a>
+    <nav class="main">
+      <a href="${bp}/">Trang chủ</a>
+      ${nav_extra}
+      <a href="${bp}/tim-kiem/">Tìm kiếm</a>
+    </nav>
+    <span class="controls">
+      <button id="fs-dec" title="Chữ nhỏ hơn" aria-label="Giảm cỡ chữ">A−</button>
+      <button id="fs-inc" title="Chữ lớn hơn" aria-label="Tăng cỡ chữ">A+</button>
+      <button id="theme-btn" title="Chế độ sáng / tối" aria-label="Đổi giao diện">◐</button>
+    </span>
+  </div>
+</header>
+
 <main class="wrap">
 ${body}
 </main>
-<footer class="site"><div class="wrap">${site_name}</div></footer>
+
+<footer class="site">
+  <div class="wrap">${site_name}</div>
+</footer>
+
+<script src="${bp}/assets/app.js"></script>
 </body>
 </html>
