@@ -1,18 +1,25 @@
 <?php
-// Debug: dump one bilingual chapter (default id=1, ?id=N) from sqlite sources.
+// Debug: dump one chapter (default id=1, ?id=N) from the default XML pair.
 header('Content-Type: text/plain; charset=UTF-8');
-$id = isset($_GET['id']) ? (int)$_GET['id'] : 1;
-$viet = new PDO('sqlite:' . __DIR__ . '/data/viet.sqlite3');
-$nasb = new PDO('sqlite:' . __DIR__ . '/data/nasb.sqlite3');
-$ref = $viet->query('SELECT reference_osis FROM chapters WHERE id = ' . $id)->fetchColumn();
-echo "chapter $id = $ref\n\n";
-foreach (array('viet' => $viet, 'nasb' => $nasb) as $label => $pdo) {
+$id = isset($_GET['id']) ? max(1, (int)$_GET['id']) : 1;
+foreach (array('vi1925' => 'VietnameseBible.xml', 'ennasb' => 'EnglishNASBBible.xml') as $label => $fn) {
     echo "== $label ==\n";
-    list($b, $c) = explode('.', $ref);
-    $st = $pdo->prepare('SELECT verse, substr(unformatted, 1, 120) FROM verses WHERE book = ? ORDER BY verse LIMIT 5');
-    $st->execute(array($b));
-    foreach ($st->fetchAll(PDO::FETCH_NUM) as $row) {
-        echo $row[0] . ' | ' . $row[1] . "\n";
+    $xml = simplexml_load_file(__DIR__ . '/data/xml/' . $fn);
+    $n = 0;
+    foreach ($xml->testament as $t) {
+        foreach ($t->book as $b) {
+            foreach ($b->chapter as $c) {
+                $n++;
+                if ($n === $id) {
+                    echo "book " . $b['number'] . " ch " . $c['number'] . "\n";
+                    $k = 0;
+                    foreach ($c->verse as $v) {
+                        echo $v['number'] . ' | ' . mb_substr(trim((string)$v), 0, 100) . "\n";
+                        if (++$k >= 5) break;
+                    }
+                }
+            }
+        }
     }
     echo "\n";
 }
