@@ -33,6 +33,7 @@ import zipfile
 from datetime import datetime, timezone
 from pathlib import Path
 from string import Template
+from urllib.parse import urlparse
 
 SITE_NAME = "Kinh Thánh Song Ngữ Việt - Anh"
 SITE_DESC = ("Kinh Thánh song ngữ Việt - Anh "
@@ -153,7 +154,8 @@ def main():
     out = args.out
     base_url = (args.base_url or "https://example.com/").rstrip("/") + "/"
     root = (base_url + bp.strip("/")).rstrip("/") + "/"
-    if "example.com" in base_url:
+    base_host = (urlparse(base_url).hostname or "").lower()
+    if base_host == "example.com":
         print("notice: --base-url is a placeholder; sitemap.xml URLs "
               "need the real domain", file=sys.stderr)
 
