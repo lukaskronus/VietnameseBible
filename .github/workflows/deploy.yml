@@ -1,0 +1,72 @@
+# Phase 4: deploy a built `site` artifact to Wasmer Edge.
+# Split from build.yml: data rebuilds never redeploy, and a deploy can be
+# retried without rebuilding. Run manually from master.
+#
+# Requires the WASMER_TOKEN repo secret; wasmer.toml/app.yaml pin the package
+# and dashboard app. The site comes from the latest successful `build` run,
+# or from an explicit run id input.
+name: deploy
+
+on:
+  workflow_dispatch:
+    inputs:
+      run_id:
+        description: Build run id to deploy (empty = latest successful build on master)
+        required: false
+        type: string
+
+permissions:
+  contents: read
+  actions: read
+
+jobs:
+  deploy_wasmer:
+    name: Deploy to Wasmer Edge
+    runs-on: ubuntu-latest
+    # Manual runs on a branch still build locally but must not ship it.
+    if: github.ref == 'refs/heads/master'
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v5
+
+      - name: Resolve build run
+        id: build
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          INPUT_RUN_ID: ${{ inputs.run_id }}
+        run: |
+          run_id="$INPUT_RUN_ID"
+          if [ -z "$run_id" ]; then
+            run_id=$(gh run list --workflow=build.yml --branch=master \
+              --status=success --limit=1 --json databaseId \
+              --jq '.[0].databaseId')
+          fi
+          if [ -z "$run_id" ] || [ "$run_id" = "null" ]; then
+            echo "error: no successful build run on master" >&2
+            exit 1
+          fi
+          echo "run-id=$run_id" >> "$GITHUB_OUTPUT"
+
+      - name: Download site artifact
+        uses: actions/download-artifact@v7
+        with:
+          name: site
+          path: site
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          run-id: ${{ steps.build.outputs.run-id }}
+
+      - name: Bump package version
+        # The Wasmer registry rejects an existing version (0.1.0 is published).
+        # Run number is unique per workflow run; re-running an already-published
+        # run needs a manual version bump.
+        run: sed -i 's/^version = .*$/version = "0.1.${{ github.run_number }}"/' wasmer.toml
+
+      - name: Set up Wasmer CLI
+        uses: wasmerio/setup-wasmer@v3
+
+      - name: Deploy site to Wasmer Edge
+        # wasmer.toml ([fs] site/ + settings/) + app.yaml (name/owner/app_id)
+        # publish this build as a new package version of the dashboard app.
+        run: wasmer deploy --publish-package --non-interactive --no-wait --no-persist-id
+        env:
+          WASMER_TOKEN: ${{ secrets.WASMER_TOKEN }}
