@@ -1,0 +1,31 @@
+# Weekly housekeeping: delete workflow runs (and their logs) older than 30 days.
+# Deletes across all workflows, not artifacts newer than the cutoff or repo data.
+name: cleanup
+
+on:
+  schedule:
+    - cron: "0 3 * * 1"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  actions: write
+
+jobs:
+  cleanup:
+    name: Delete old workflow runs
+    runs-on: ubuntu-latest
+    steps:
+      - name: Delete runs older than 30 days
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          REPO: ${{ github.repository }}
+        run: |
+          cutoff=$(date -u -d '30 days ago' +%Y-%m-%dT%H:%M:%SZ)
+          gh api --paginate \
+            "repos/$REPO/actions/runs?per_page=100&created=%3C${cutoff}" \
+            --jq '.workflow_runs[].id' |
+          while read -r id; do
+            gh api -X DELETE "repos/$REPO/actions/runs/$id" &&
+              echo "deleted $id" || echo "skip $id"
+          done
