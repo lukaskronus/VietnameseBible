@@ -35,8 +35,15 @@ không quảng cáo — xin tôn trọng điều khoản của từng bản dị
    định; trang chủ + trang sách có **bộ chọn ghép cặp** (2 dropdown, lưu
    `localStorage`), nạp `data/tr/<mã-bản-dịch>/ch/<id>.json` không cần tải
    lại trang. Đoạn của ngày:
-   `chapter_id = days_since_epoch % 1189 + 1`, chung quy luật với `index.php`.
-4. Deploy thủ công từ artifact `site`.
+   `chapter_id = ((701 * days_since_epoch + 123) % 1189) + 1`, chung quy luật
+   với `index.php`.
+   Artifact: `site/` (site đầy đủ) và `site.zip` (bản nén để deploy lên
+   nginx/docker, không cần Wasmer).
+4. **Deploy** (`.github/workflows/deploy.yml`, chạy tay trên `master`): tải
+   artifact `site` của lần build thành công gần nhất, tăng version trong
+   `wasmer.toml` theo số run rồi deploy lên Wasmer Edge. Build không còn tự
+   deploy. `.github/workflows/cleanup.yml` xoá các workflow run cũ hơn 30 ngày
+   theo lịch hàng tuần.
 
 ## Trang PHP (`index.php`)
 
