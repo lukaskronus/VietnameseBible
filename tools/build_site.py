@@ -14,7 +14,7 @@ URL scheme: / = home (pair-switchable verse of the day + book grid),
 and translations load via book.js + pair.js),
 /<slug>/<n>/ = chapter (default pair, baked), /tim-kiem/ = search.
 Chapter ids 1..N follow canon order; the client verse-of-the-day is:
-    chapter_id = (days_since_unix_epoch % total_chapters) + 1
+    chapter_id = ((701 * days_since_unix_epoch + 123) % total_chapters) + 1
 per-translation chapter JSON under data/tr/<code>/ch/<id>.json feeds the
 switchable views (each verse carries its number and text; the client
 merges one VI file with one EN file).

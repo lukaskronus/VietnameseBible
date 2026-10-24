@@ -198,7 +198,7 @@ def main():
                 ("total_verses", str(n_verses)),
                 ("total_headings", str(n_headings)),
                 ("verse_of_day_rule",
-                 "(days_since_unix_epoch % total_chapters) + 1"
+                 "((701 * days_since_unix_epoch + 123) % total_chapters) + 1"
                  "  (result is a chapters.id)"),
             ]
             con.executemany("INSERT INTO meta(key, value) VALUES (?,?)",

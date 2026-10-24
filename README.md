@@ -36,7 +36,7 @@ không quảng cáo — xin tôn trọng điều khoản của từng bản dị
    `localStorage`), nạp `data/tr/<mã-bản-dịch>/ch/<id>.json` không cần tải
    lại trang. Đoạn của ngày:
    `chapter_id = ((701 * days_since_epoch + 123) % 1189) + 1`, chung quy luật
-   với `index.php`.
+   với `tools/static/daily.js`.
    Artifact: `site/` (site đầy đủ) và `site.zip` (bản nén để deploy lên
    nginx/docker, không cần Wasmer).
 4. **Deploy** (`.github/workflows/deploy.yml`, chạy tay trên `master`): tải
@@ -45,7 +45,5 @@ không quảng cáo — xin tôn trọng điều khoản của từng bản dị
    deploy. `.github/workflows/cleanup.yml` xoá các workflow run cũ hơn 30 ngày
    theo lịch hàng tuần.
 
-## Trang PHP (`index.php`)
-
-`index.php` đọc trực tiếp 2 file XML mặc định (SimpleXML) và hiển thị đoạn
-song ngữ của ngày. `test.php` là script debug (`?id=N`).
+Trang web chỉ còn bản tĩnh; frontend PHP cũ (`index.php`, `test.php`) đã được
+bỏ.

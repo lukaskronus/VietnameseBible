@@ -76,7 +76,7 @@ function loadDaily() {
       // Daily surprise: full-cycle shuffle over all chapters. 701 is coprime
       // to the chapter count (1189 = 29*41), so (701*day + 123) % N visits
       // every chapter exactly once per cycle, in unpredictable order.
-      // Keep in sync with index.php (same constants, UTC day number).
+      // UTC day number; build_site.py's docstring documents the same rule.
       var day = Math.floor(Date.now() / 864e5);
       var id = ((701 * day + 123) % list.length) + 1;
       return Promise.all([

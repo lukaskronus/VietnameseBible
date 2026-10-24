@@ -1,9 +1,8 @@
 # AGENTS.md
 
-Bilingual Vietnamese–English Bible site. Two frontends share one data set:
-`index.php` (+ `test.php`) renders the default pair straight from XML, while the
-static site built by `tools/*.py` and deployed to Wasmer Edge is the live site.
-The six XML files in `data/xml/` are the only data source. `data/txt/` and
+Bilingual Vietnamese–English Bible site. Static site built by `tools/*.py` and
+deployed to Wasmer Edge; the former PHP frontend (`index.php`, `test.php`) is
+gone. The six XML files in `data/xml/` are the only data source. `data/txt/` and
 `data/sqlite/` are tracked legacy files that nothing reads anymore.
 
 ## Build and verify
@@ -26,8 +25,7 @@ Each build uploads `site` and, separately, `site.zip` as the `site-zip`
 artifact for nginx/docker hosting.
 
 Builds trigger only on changes to `data/**`, `tools/**`, or `build.yml`.
-Editing only `index.php`, `app.yaml`, `wasmer.toml`, or docs will not start a
-build.
+Editing only `app.yaml`, `wasmer.toml`, or docs will not start a build.
 
 Deployment is a separate manual workflow: `.github/workflows/deploy.yml` (must
 run from `master`) downloads the latest successful `site` artifact — or the
@@ -43,15 +41,12 @@ weekly and on manual dispatch.
 
 ## Rules that span multiple files
 
-- **Daily chapter formula** is duplicated and must stay identical:
-  `id = ((701 * days_since_unix_epoch_UTC + 123) % total_chapters)`. JS/Python
-  use the 1-based `+ 1` form; `index.php` indexes a 0-based map instead.
-  701 is chosen because it is coprime to 1189. Some docstrings still show the
-  older modulo-only rule — trust `tools/static/daily.js` and `index.php`.
+- **Daily chapter formula** lives in `tools/static/daily.js`:
+  `id = ((701 * days_since_unix_epoch_UTC + 123) % total_chapters) + 1`.
+  701 is coprime to 1189, so every chapter appears once per cycle.
 - **Book titles** live only in `tools/parse_bible.py` (`VI_TITLES`,
-  `EN_TITLES`, `OSIS`); the XML stores numbers 1–66 only. `index.php` keeps its
-  own PHP copies and has already drifted slightly. Update both when renaming a
-  book, because slugs derive from the Vietnamese titles via `slugify()`.
+  `EN_TITLES`, `OSIS`); the XML stores numbers 1–66 only. Slugs derive from the
+  Vietnamese titles via `slugify()`, so renaming a book changes its URLs.
 - **Search folding** must match between `fold`/`tokenize` in
   `tools/build_db.py` and `fold`/`toks` in `tools/static/search.js`: NFD, strip
   combining marks, `đ/Đ/ð/Ð → d/D`, lowercase, `[a-z0-9]+` runs, tokens of at
