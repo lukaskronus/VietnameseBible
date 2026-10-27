@@ -100,6 +100,10 @@ function loadDaily() {
       document.getElementById("daily-text").innerHTML = mergeBlocks(vi.blocks, en.blocks);
     })
     .catch(function () {
+      // Otherwise "Đang tải…" sits there for ever under a heading that never
+      // arrives.
+      var meta = document.getElementById("daily-meta");
+      if (meta) meta.textContent = "";
       document.getElementById("daily-text").innerHTML =
         "<p>Không tải được đoạn Kinh Thánh hôm nay.</p>";
     });
