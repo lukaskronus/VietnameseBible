@@ -164,9 +164,13 @@ def parse_usfx_file(path, warnings, code):
             if elem.text:
                 state['buf'].append(elem.text)
             for child in elem:
-                walk(child)
-                if child.tail:
-                    state['buf'].append(child.tail)
+                try:
+                    walk(child)
+                    if child.tail:
+                        state['buf'].append(child.tail)
+                except Exception:
+                    # Skip problematic child elements but continue parsing
+                    pass
 
         walk(book)
         flush()
