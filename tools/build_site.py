@@ -180,10 +180,12 @@ def main():
     ot_books = [b for b in books if b["testament"] == "OT"]
     nt_books = [b for b in books if b["testament"] != "OT"]
     nav_dd = ("<div class=\"dd\">"
-              "<button type=\"button\" aria-expanded=\"false\">Cựu Ước</button>%s"
+              "<button type=\"button\" aria-expanded=\"false\">Cựu Ước"
+              "<span class=\"caret\" aria-hidden=\"true\">▾</span></button>%s"
               "</div>"
               "<div class=\"dd\">"
-              "<button type=\"button\" aria-expanded=\"false\">Tân Ước</button>%s"
+              "<button type=\"button\" aria-expanded=\"false\">Tân Ước"
+              "<span class=\"caret\" aria-hidden=\"true\">▾</span></button>%s"
               "</div>"
               % (dd_menu(ot_books), dd_menu(nt_books)))
 

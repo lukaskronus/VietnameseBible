@@ -28,18 +28,19 @@ try {
 ${head_extra}
 </head>
 <body>
+<a class="skip" href="#main">Bỏ qua thanh đầu trang</a>
 <header class="top">
   <div class="bar">
-    <a class="brand" href="${bp}/">Kinh Thánh Song Ngữ<small>Đọc song song Việt – Anh</small></a>
-    <nav class="main">
+    <a class="brand" href="${bp}/">Kinh Thánh Song Ngữ</a>
+    <nav class="main" aria-label="Chính">
       <a href="${bp}/">Trang chủ</a>
       ${nav_extra}
       <a href="${bp}/tim-kiem/">Tìm kiếm</a>
     </nav>
     <div class="controls">
-      <button id="en-btn" type="button" title="Hiện hoặc ẩn bản tiếng Anh" aria-label="Hiện hoặc ẩn bản tiếng Anh" aria-pressed="true">EN</button>
-      <button id="fs-dec" type="button" title="Chữ nhỏ hơn" aria-label="Giảm cỡ chữ">A−</button>
-      <button id="fs-inc" type="button" title="Chữ lớn hơn" aria-label="Tăng cỡ chữ">A+</button>
+      <button id="en-btn" type="button" title="Hiện hoặc ẩn bản tiếng Anh" aria-label="EN — hiện hoặc ẩn bản tiếng Anh" aria-pressed="true">EN</button>
+      <button id="fs-dec" type="button" title="Chữ nhỏ hơn" aria-label="A− — giảm cỡ chữ">A−</button>
+      <button id="fs-inc" type="button" title="Chữ lớn hơn" aria-label="A+ — tăng cỡ chữ">A+</button>
       <button id="theme-btn" type="button" title="Chế độ sáng / tối" aria-label="Đổi giao diện" aria-pressed="false">◐</button>
     </div>
   </div>
@@ -47,7 +48,7 @@ ${head_extra}
 
 <div class="progress" id="progress" aria-hidden="true"></div>
 
-<main class="wrap">
+<main class="wrap" id="main">
 ${body}
 </main>
 

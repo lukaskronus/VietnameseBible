@@ -9,7 +9,7 @@
   --field:  #ece9e1;
   --ink:    #1b211d;
   --ink-2:  #454e48;
-  --muted:  #68716b;
+  --muted:  #616a64;   /* 4.6:1 on --field, 5.2:1 on --paper */
   --rubric: #9a2c23;
   --on-rubric: #f7f6f2;
 
@@ -98,6 +98,23 @@ main.wrap { flex: 1; }
   max-width: 42rem;
 }
 
+/* ---------- Skip link ---------- */
+.skip {
+  position: fixed;
+  top: 0;
+  left: 0;
+  z-index: 400;
+  padding: 0.6rem 0.9rem;
+  background: var(--paper);
+  border: 1px solid var(--rubric);
+  font-family: var(--sans);
+  font-size: var(--step-small);
+  font-weight: 600;
+  color: var(--rubric);
+  transform: translateY(-150%);
+}
+.skip:focus { transform: none; color: var(--ink); }
+
 /* ---------- Header ---------- */
 header.top {
   position: sticky;
@@ -117,24 +134,16 @@ header.top .bar {
   flex-wrap: wrap;
 }
 
+/* Header chrome is sans, page titles are serif: the name never repeats
+   the home h1's face. */
 .brand {
-  font-family: var(--serif);
-  font-weight: 600;
-  font-size: 1.0625rem;
-  line-height: 1.15;
-  letter-spacing: -0.01em;
-  color: var(--ink);
-  display: flex;
-  flex-direction: column;
-  margin-right: auto;
-}
-.brand small {
   font-family: var(--sans);
-  font-weight: 400;
-  font-size: 0.75rem;
-  color: var(--muted);
+  font-weight: 600;
+  font-size: 0.9375rem;
+  line-height: 1.15;
   letter-spacing: 0;
-  margin-top: 0.15rem;
+  color: var(--ink);
+  margin-right: auto;
 }
 
 nav.main {
@@ -152,6 +161,9 @@ nav.main > a,
   background: none;
   border: 0;
   padding: 0.55rem 0.7rem;
+  /* Buttons default to `normal`, links inherit 1.72: without this the menu
+     buttons sit 6px shorter than the links beside them. */
+  line-height: inherit;
   cursor: pointer;
   transition: color 0.15s var(--ease);
 }
@@ -164,8 +176,9 @@ nav.main > a:hover,
   position: relative;
   user-select: none;
 }
-.dd > button::after {
-  content: "\25BE";
+/* A real element, not ::after: generated content lands in the accessible
+   name, so the button announced "Cựu Ước▾". */
+.dd > button .caret {
   font-size: 0.6em;
   margin-left: 0.4em;
   opacity: 0.55;
@@ -727,6 +740,7 @@ body[data-reader="1"] .progress { display: block; }
 @media print {
   header.top,
   .controls,
+  .skip,
   nav.pn,
   form.search,
   .crumb,
@@ -752,7 +766,6 @@ body[data-reader="1"] .progress { display: block; }
 
 /* ---------- Responsive ---------- */
 @media (max-width: 1024px) {
-  .brand small { display: none; }
   nav.main > a, .dd > button { padding: 0.45rem 0.55rem; }
   .controls button { min-width: 2.25rem; }
 }
@@ -773,7 +786,9 @@ body[data-reader="1"] .progress { display: block; }
   }
   .index-cols { grid-template-columns: 1fr; gap: 2rem; }
   .crumb { display: none; }
-  nav.main { order: 3; width: 100%; gap: 0; }
+  /* Wraps instead of overflowing: four items need 294px and a 320px phone
+     gives the row 265px, which used to scroll the whole page sideways. */
+  nav.main { order: 3; width: 100%; gap: 0; flex-wrap: wrap; }
   nav.main > a:first-child { padding-left: 0; }
   .controls { margin-left: auto; }
 }
@@ -787,18 +802,21 @@ body[data-reader="1"] .progress { display: block; }
     padding: 0.5rem 1.25rem;
     gap: 0.25rem 0.75rem;
   }
-  .brand { font-size: 0.9375rem; }
+  /* 44px rows at thumb size; the text still centres because the padding does
+     the work, not min-height. */
   nav.main > a, .dd > button {
-    padding: 0.4rem 0.4rem;
+    padding: 0.7rem 0.4rem;
     font-size: 0.8125rem;
     white-space: nowrap;
   }
   .controls button { min-width: 2rem; min-height: 2rem; font-size: 0.75rem; }
   .dd-menu {
     min-width: 12rem;
+    max-width: calc(100vw - 2.5rem);
     max-height: 60vh;
   }
-  .masthead { padding-top: 2rem; }
+  /* The second menu used to hang 53px off the right edge of a 320px screen. */
+  nav.main .dd:last-of-type .dd-menu { left: auto; right: 0; }
   .daily-head { gap: 0.75rem; }
   .license ul { grid-template-columns: 1fr; }
   .index-cols summary {

@@ -91,12 +91,25 @@ document.querySelectorAll(".dd").forEach(function (el) {
     var b = el.querySelector("button");
     if (b) b.setAttribute("aria-expanded", open ? "true" : "false");
   });
+  // Tab past the last book: the panel must not stay open over the page while
+  // focus is somewhere else.
+  el.addEventListener("focusout", function (e) {
+    if (e.relatedTarget && el.contains(e.relatedTarget)) return;
+    if (el.classList.contains("open")) ktCloseDd();
+  });
 });
 document.addEventListener("click", function () {
   ktCloseDd();
 });
 document.addEventListener("keydown", function (e) {
-  if (e.key === "Escape") ktCloseDd();
+  if (e.key !== "Escape") return;
+  // Escape from inside the panel: hand focus back to the button first, or the
+  // browser drops it on <body> and the reader is back at the top of the page.
+  document.querySelectorAll(".dd.open").forEach(function (el) {
+    var b = el.querySelector("button");
+    if (b && el.contains(document.activeElement)) b.focus();
+  });
+  ktCloseDd();
 });
 
 /* Reading progress */
