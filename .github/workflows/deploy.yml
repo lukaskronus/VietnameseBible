@@ -1,9 +1,14 @@
 # Phase 4: deploy public domain Bible site (web_version) to Wasmer Edge.
 # Builds from data/web_version (USFX, public domain) and deploys.
-# Run manually from master.
+# Runs on push to data/tools and manually from master.
 name: deploy
 
 on:
+  push:
+    paths:
+      - "data/**"
+      - "tools/**"
+      - ".github/workflows/deploy.yml"
   workflow_dispatch:
     inputs:
       base_url:

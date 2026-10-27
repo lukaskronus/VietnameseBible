@@ -2,8 +2,9 @@
 # Phase 2: build_db (bible.json -> bible.sqlite + search_index.json)
 # Phase 3: build_site (bible.json + search_index.json -> static site/ + site.zip)
 #
-# Build only. Deployment lives in deploy.yml (manual dispatch) so a data
-# rebuild never triggers a redeploy. site.zip is the portable nginx bundle.
+# Manual dispatch only. This produces portable site artifacts (site + site.zip)
+# from licensed translations in data/xml/. Wasmer deployment (public domain
+# web_version builds) lives in deploy.yml and triggers on push.
 #
 # All execution happens on GitHub-hosted runners; local machines are
 # code storage only (no builds there).
@@ -15,16 +16,6 @@
 name: build
 
 on:
-  push:
-    paths:
-      - "data/**"
-      - "tools/**"
-      - ".github/workflows/build.yml"
-  pull_request:
-    paths:
-      - "data/**"
-      - "tools/**"
-      - ".github/workflows/build.yml"
   workflow_dispatch:
 
 permissions:
