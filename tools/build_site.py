@@ -36,8 +36,6 @@ from string import Template
 from urllib.parse import urlparse
 
 SITE_NAME = "Kinh Thánh Song Ngữ Việt - Anh"
-SITE_DESC = ("Kinh Thánh song ngữ Việt - Anh "
-             "(1925, Bản Dịch Mới, Hiệu Đính 2010, ESV, NASB, NET)")
 
 TOOLS_DIR = Path(__file__).resolve().parent
 STATIC_DIR = TOOLS_DIR / "static"
@@ -141,12 +139,29 @@ def main():
             for code in translations)
         return (
             "<section class=\"license\">\n"
-            "<p class=\"kicker\">Bản quyền bản dịch</p>\n"
+            "<h2>Bản quyền bản dịch</h2>\n"
             "<ul>%s</ul>\n"
             "<p>Trang web phi thương mại, không quảng cáo. "
             "Mọi bản dịch thuộc về chủ sở hữu bản quyền tương ứng; "
             "xin tôn trọng điều khoản sử dụng của từng bản dịch.</p>\n"
             "</section>" % items)
+
+    def book_grid():
+        """All 66 books split into OT and NT, as plain text links."""
+        ot_books = [b for b in books if b["testament"] == "OT"]
+        nt_books = [b for b in books if b["testament"] != "OT"]
+
+        def section(title, blist):
+            items = "".join(
+                "<li><a href=\"%s/%s/\">%s</a></li>"
+                % (bp, b["slug"], esc(btitle(b)))
+                for b in sorted(blist, key=lambda b: b["position"]))
+            return (
+                "<div class=\"books\">\n"
+                "<h2>%s</h2>\n"
+                "<ul>%s</ul>\n"
+                "</div>" % (esc(title), items))
+        return section("Cựu Ước", ot_books) + section("Tân Ước", nt_books)
 
     bp = "/" + args.base_path.strip("/")
     if bp == "/":
@@ -206,6 +221,9 @@ def main():
     write(os.path.join(out, "assets", "daily.js"), minify_js(DAILY_JS_SRC))
     write(os.path.join(out, "assets", "book.js"), minify_js(BOOK_JS_SRC))
     write(os.path.join(out, "assets", "pair.js"), minify_js(PAIR_JS_SRC))
+    # Favicon (SVG at root, referenced by <link> in template)
+    favicon_src = (STATIC_DIR / "favicon.svg").read_text("utf-8")
+    write(os.path.join(out, "favicon.svg"), favicon_src)
     with open(args.index, encoding="utf-8") as f:
         write(os.path.join(out, "data", "search_index.json"), f.read())
     write(os.path.join(out, "data", "chapters.json"),
@@ -251,7 +269,7 @@ def main():
     for book in sorted(books, key=lambda b: b["position"]):
         title_vi = btitle(book)
         title_en = btitle_en(book)
-        book_cids = []  # (chapter number, chapter id) for the side pane
+        book_cids = []  # (chapter number, chapter id) for the chapter bar
         for ch in book["chapters"]:
             cid += 1
             book_cids.append((ch["number"], cid))
@@ -311,10 +329,10 @@ def main():
                                  ensure_ascii=False,
                                  separators=(",", ":")) + "\n")
 
-        # book page: split reader -- chapter content left, chapter buttons
-        # right. Default-pair chapter 1 is embedded statically; switching
+        # book page: split reader -- chapter content left, chapter bar top.
+        # Default-pair chapter 1 is embedded statically; switching
         # chapters or translations loads data/tr/<code>/ch/<id>.json via
-        # book.js (no page reload). Buttons are plain links, so the page
+        # book.js (no page reload). Chapter links are plain links, so the page
         # works without JavaScript too.
         first_html = render_blocks(book["chapters"][0]["number"],
                                    book["chapters"][0]["blocks"])
@@ -332,19 +350,19 @@ def main():
         body = (
             "<div class=\"book-layout\" data-site=\"%s\">\n"
             "<section class=\"book-main\">\n"
-            "<p class=\"crumb\"><a href=\"%s/\">%s</a></p>\n"
+            "<p class=\"crumb\"><a href=\"%s/\">%s</a> / "
+            "<a href=\"%s/%s/\">%s</a></p>\n"
             "<div class=\"chapter-meta\"><h1>%s</h1>\n%s</div>\n"
             "%s\n"
+            "<nav class=\"chap-bar\">\n"
+            "<ol>%s</ol>\n"
+            "</nav>\n"
             "<h2 class=\"bk-ch\" id=\"bk-ch-title\">%s</h2>\n"
             "<div id=\"bk-content\">\n%s\n</div>\n"
-            "</section>\n"
-            "<aside class=\"book-side\">\n"
-            "<p class=\"side-kicker\">%s · Chương</p>\n"
-            "<ol class=\"chap-btns\">%s</ol>\n"
-            "</aside>\n</div>"
-            % (esc(SITE_NAME), bp, esc(SITE_NAME), esc(h1_book), sub,
-               pair_picker(),
-               esc(ch1_bi), "\n".join(first_html), esc(title_vi), btns))
+            "</section>\n</div>"
+            % (esc(SITE_NAME), bp, esc(SITE_NAME), bp, book["slug"],
+               esc(title_vi), esc(h1_book), sub, pair_picker(),
+               btns, esc(ch1_bi), "\n".join(first_html)))
         write(os.path.join(out, book["slug"], "index.html"),
               page(bp, "%s | %s" % (h1_book, SITE_NAME),
                    h1_book, body, ("app.js", "pair.js", "book.js"), nav_dd))
@@ -355,18 +373,19 @@ def main():
     # in the chosen pair (default 1925-VI + NASB 1995) via daily.js + pair.js.
     first_book = sorted(books, key=lambda b: b["position"])[0]
     home = (pair_picker()
-            + "<section id=\"daily\"><p class=\"kicker\">"
-            "Song ngữ Việt - Anh · Mỗi ngày một đoạn</p>\n"
+            + "<section id=\"daily\">\n"
             "<h2 id=\"daily-title\">…</h2>\n"
+            "<p id=\"daily-meta\" class=\"daily-meta\">Đang tải…</p>\n"
             "<div id=\"daily-text\"><p>Đang tải…</p></div>\n"
             "<p><a id=\"daily-link\" href=\"#\">"
             "Đọc cả đoạn →</a></p>\n"
             "<noscript><p><a href=\"%s/%s/1/\">"
             "%s 1</a></p></noscript></section>\n"
             % (bp, first_book["slug"], esc(btitle(first_book)))
+            + book_grid()
             + license_section())
     write(os.path.join(out, "index.html"),
-          page(bp, SITE_NAME, SITE_DESC,
+          page(bp, SITE_NAME, SITE_NAME,
                home, ("app.js", "pair.js", "daily.js"), nav_dd))
 
     # ---- search -----------------------------------------------------------

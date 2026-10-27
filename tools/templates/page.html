@@ -7,6 +7,9 @@
 <meta name="description" content="${desc}">
 <title>${title}</title>
 
+<!-- Favicon -->
+<link rel="icon" href="${bp}/favicon.svg" type="image/svg+xml" sizes="any">
+
 <!-- Elegant typography: Spectral for scripture, Source Sans 3 for interface -->
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -33,11 +36,11 @@ ${head_extra}
       ${nav_extra}
       <a href="${bp}/tim-kiem/">Tìm kiếm</a>
     </nav>
-    <span class="controls">
-      <button id="fs-dec" title="Chữ nhỏ hơn" aria-label="Giảm cỡ chữ">A−</button>
-      <button id="fs-inc" title="Chữ lớn hơn" aria-label="Tăng cỡ chữ">A+</button>
-      <button id="theme-btn" title="Chế độ sáng / tối" aria-label="Đổi giao diện">◐</button>
-    </span>
+    <div class="controls">
+      <button id="fs-dec" title="Chữ nhỏ hơn" aria-label="Giảm cỡ chữ">−</button>
+      <button id="fs-inc" title="Chữ lớn hơn" aria-label="Tăng cỡ chữ">+</button>
+      <button id="theme-btn" title="Chế độ sáng / tối" aria-label="Đổi giao diện" aria-pressed="false">◐</button>
+    </div>
   </div>
 </header>
 
@@ -46,7 +49,10 @@ ${body}
 </main>
 
 <footer class="site">
-  <div class="wrap">${site_name}</div>
+  <div class="wrap">
+    <span>${site_name}</span>
+    <a class="credit" href="https://github.com/lukaskronus/VietnameseBible" target="_blank" rel="noopener noreferrer" title="Xem nguồn trên GitHub">Code & design · Hirose Kobayashi</a>
+  </div>
 </footer>
 </body>
 </html>

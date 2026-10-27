@@ -46,7 +46,7 @@ function mergeBlocks(viBlocks, enBlocks) {
     var vv = mVi[n] || "";
     var ee = mEn[n] || "";
     if (!vv && !ee) continue;
-    h += '<div class="verse-pair"><p class="reading vi"><sup>' + n + "</sup>" + esc(vv) + "</p>";
+    h += '<div class="verse-pair fade-in"><p class="reading vi"><sup>' + n + "</sup>" + esc(vv) + "</p>";
     if (ee) h += '<p class="reading en" lang="en"><sup>' + n + "</sup>" + esc(ee) + "</p>";
     h += "</div>";
   }
@@ -88,11 +88,17 @@ function loadDaily() {
           if (!r.ok) throw 0;
           return r.json();
         }),
-      ]);
+      ]).then(function (pair) {
+        return { vi: pair[0], en: pair[1], list: list, id: id };
+      });
     })
-    .then(function (pair) {
-      var vi = pair[0];
-      var en = pair[1];
+    .then(function (o) {
+      var vi = o.vi;
+      var en = o.en;
+      var meta = document.getElementById("daily-meta");
+      if (meta) {
+        meta.textContent = "Chương " + o.id + " trong tổng số " + o.list.length;
+      }
       document.getElementById("daily-title").textContent = biTitle(vi, en);
       document.getElementById("daily-link").href = bp + "/" + vi.slug + "/" + vi.n + "/";
       document.getElementById("daily-text").innerHTML = mergeBlocks(vi.blocks, en.blocks);

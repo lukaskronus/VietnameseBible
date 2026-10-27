@@ -1,3 +1,5 @@
+/*! Kinh Thánh Song Ngữ VI-EN | design & code by Hirose Kobayashi | github.com/lukaskronus/VietnameseBible */
+
 "use strict";
 
 function ktGet(id) {
@@ -6,6 +8,13 @@ function ktGet(id) {
 
 /* Theme toggle */
 var themeBtn = ktGet("theme-btn");
+function ktUpdateThemeBtn() {
+  if (!themeBtn) return;
+  var h = document.documentElement;
+  var isDark = h.dataset.theme === "dark";
+  themeBtn.textContent = isDark ? "Tối" : "Sáng";
+  themeBtn.setAttribute("aria-pressed", isDark);
+}
 if (themeBtn) {
   themeBtn.onclick = function () {
     var h = document.documentElement;
@@ -14,6 +23,7 @@ if (themeBtn) {
     try {
       localStorage.setItem("kt-theme", next);
     } catch (e) {}
+    ktUpdateThemeBtn();
   };
 }
 
@@ -50,3 +60,6 @@ document.addEventListener("click", function () {
     d.classList.remove("open");
   });
 });
+
+/* Init theme button label */
+ktUpdateThemeBtn();

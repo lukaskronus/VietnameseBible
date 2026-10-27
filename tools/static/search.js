@@ -81,21 +81,18 @@ function run(e) {
 
   var h = "<p>Tìm thấy " + keys.length + " đoạn.</p>";
   var lim = Math.min(keys.length, 100);
+  var currentBook = "";
 
   for (var n = 0; n < lim; n++) {
     var c = CHS[keys[n] - 1];
+    if (c.book !== currentBook) {
+      currentBook = c.book;
+      h += "<h3>" + esc(currentBook) + "</h3>";
+    }
     var label = c.book + " " + c.n;
     if (c.book_en) label += " · " + c.book_en + " " + c.n;
-    h +=
-      '<a href="' +
-      bp +
-      "/" +
-      c.slug +
-      "/" +
-      c.n +
-      '/">' +
-      esc(label) +
-      "</a>";
+    var href = bp + "/" + c.slug + "/" + c.n + "/";
+    h += '<a href="' + escAttr(href) + '">' + esc(label) + "</a>";
   }
 
   if (keys.length > lim) {
@@ -103,6 +100,12 @@ function run(e) {
   }
 
   out.innerHTML = h;
+}
+
+function escAttr(s) {
+  return s
+    .replace(/&/g, "&amp;")
+    .replace(/"/g, "&quot;");
 }
 
 document.getElementById("search-form").addEventListener("submit", run);

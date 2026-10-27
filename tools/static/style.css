@@ -1,32 +1,29 @@
 /* ============================================================
-   Kinh Thánh Song Ngữ — Elegant Reading Stylesheet
-   Warm ivory-cream (light) · Cool icy slate-lavender (dark)
-   Spectral for scripture · Spacious, contemplative layout
+   Kinh Thánh Song Ngữ — Refined Elegant Reading Stylesheet
+   Soft dusty-peach pastel (light) · Warm dark (dark)
+   Spectral for scripture · Source Sans 3 for UI chrome
    ============================================================ */
 
 /* ---------- Google Fonts (loaded in template) ---------- */
 /* Spectral: biblical text | Source Sans 3: UI chrome */
 
 :root {
-  /* Warm ivory-cream foundation */
-  --bg:        #f7f2eb;
-  --bg2:       #efe8de;
-  --fg:        #3a342e;
-  --fg2:       #5a524a;
-  --mut:       #a89a8c;
-  --acc:       #b87a5c;          /* muted terracotta / clay */
-  --acc2:      #a0684c;
-  --acc-hover: #c48b6a;
-  --acc-bg:    rgba(184, 122, 92, 0.10);
+  /* Soft off-white ground */
+  --bg:        #fbf9f6;
+  --bg2:       #f0ece7;
+  --fg:        #3a3631;
+  --fg2:       #8c8279;
+  --mut:       #6b6259;
+  --acc:       #c1a79e;          /* dusty peach pastel */
+  --acc2:      #b0968a;
   --line:      #e6d9c8;
-  --card:      #fffcf7;
-  --shadow:    0 4px 24px rgba(140, 100, 70, 0.07);
-  --shadow-lg: 0 12px 40px rgba(140, 100, 70, 0.09);
+  --shadow:    none;
+  --shadow-lg: none;
 
   /* Typography */
   --serif: "Spectral", "Noto Serif", Georgia, "Times New Roman", serif;
   --sans:  "Source Sans 3", system-ui, -apple-system, "Segoe UI", sans-serif;
-  --fs: 18.5px;
+  --fs: 20px;
 
   /* Spacing rhythm */
   --space-xs: 0.35rem;
@@ -34,25 +31,19 @@
   --space-md: 1.25rem;
   --space-lg: 2rem;
   --space-xl: 3.25rem;
-  --radius:   14px;
-  --radius-sm: 9px;
+  --radius:   12px;
+  --radius-sm: 6px;
 }
 
 html[data-theme="dark"] {
-  /* Cool icy foundation */
-  --bg:        #1a1d24;
-  --bg2:       #242830;
-  --fg:        #e8ecf4;
-  --fg2:       #b4bcc9;
-  --mut:       #7a8496;
-  --acc:       #a89bc4;          /* cool slate-lavender */
-  --acc2:      #9488b0;
-  --acc-hover: #b8acd4;
-  --acc-bg:    rgba(168, 155, 196, 0.12);
-  --line:      #323842;
-  --card:      #22262e;
-  --shadow:    0 4px 24px rgba(0, 0, 0, 0.28);
-  --shadow-lg: 0 12px 40px rgba(0, 0, 0, 0.35);
+  --bg:        #161719;
+  --bg2:       #252628;
+  --fg:        #d6d2ca;
+  --fg2:       #949ca3;
+  --mut:       #6b7280;
+  --acc:       #a18c83;
+  --acc2:      #8a7c70;
+  --line:      #3a3a3f;
 }
 
 /* ---------- Base ---------- */
@@ -70,7 +61,7 @@ html {
 body {
   background: var(--bg);
   color: var(--fg);
-  font: var(--fs) / 1.85 var(--serif);
+  font: var(--fs) / 1.7 var(--serif);
   -webkit-font-smoothing: antialiased;
   text-rendering: optimizeLegibility;
   transition: background 0.35s ease, color 0.35s ease;
@@ -82,25 +73,22 @@ a {
   transition: color 0.2s ease;
 }
 a:hover {
-  color: var(--acc-hover);
+  color: var(--acc2);
 }
 
 /* ---------- Layout shell ---------- */
 .wrap {
-  max-width: 58rem;          /* 56–60 rem book-like measure */
+  max-width: 58rem;
   margin: 0 auto;
   padding: 0 2rem 5.5rem;
 }
 
 /* ---------- Header ---------- */
 header.top {
-  border-bottom: 1px solid var(--line);
-  background: linear-gradient(180deg, var(--card) 0%, var(--bg) 100%);
+  background: var(--bg);
   position: sticky;
   top: 0;
   z-index: 100;
-  backdrop-filter: blur(14px);
-  -webkit-backdrop-filter: blur(14px);
 }
 
 header.top .bar {
@@ -147,7 +135,6 @@ nav.main > .dd {
 nav.main > a:hover,
 nav.main > .dd:hover {
   color: var(--acc);
-  background: var(--acc-bg);
   text-decoration: none;
 }
 
@@ -165,13 +152,11 @@ nav.main > .dd:hover {
   display: none;
   position: absolute;
   top: calc(100% + 0.4rem);
-  right: 0;
-  background: var(--card);
-  border: 1px solid var(--line);
-  border-radius: 12px;
-  box-shadow: var(--shadow-lg);
-  padding: 0.5rem 0;
-  min-width: 18rem;
+  left: 0;
+  background: var(--bg2);
+  border-radius: 10px;
+  padding: 0.4rem 0;
+  min-width: 16rem;
   max-height: 70vh;
   overflow-y: auto;
   z-index: 200;
@@ -183,13 +168,12 @@ nav.main > .dd:hover {
   font-size: 0.86rem;
   color: var(--fg2);
   text-decoration: none;
-  transition: background 0.15s ease, color 0.15s ease;
+  transition: color 0.15s ease;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
 }
 .dd-menu a:hover {
-  background: var(--acc-bg);
   color: var(--acc);
   text-decoration: none;
 }
@@ -203,8 +187,8 @@ nav.main > .dd:hover {
     left: 0.75rem;
     right: 0.75rem;
     top: auto;
+    bottom: auto;
     max-height: 55vh;
-    width: auto;
   }
 }
 
@@ -219,16 +203,21 @@ nav.main > .dd:hover {
   border: 1px solid var(--line);
   color: var(--mut);
   border-radius: var(--radius-sm);
-  padding: 0.3rem 0.6rem;
-  cursor: pointer;
-  font-size: 0.82rem;
+  padding: 0;
+  min-width: 44px;
+  min-height: 44px;
+  font-size: 0.92rem;
   font-family: var(--sans);
+  font-weight: 500;
+  cursor: pointer;
   transition: border-color 0.2s ease, color 0.2s ease, background 0.2s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 .controls button:hover {
   border-color: var(--acc);
   color: var(--acc);
-  background: var(--acc-bg);
 }
 .controls button:active {
   transform: scale(0.96);
@@ -250,23 +239,10 @@ nav.main > .dd:hover {
 
 /* ---------- Verse of the Day ---------- */
 #daily {
-  border: 1px solid var(--line);
-  border-top: 3px solid var(--acc);
-  border-radius: 18px;
   padding: 2.75rem 3rem;
   margin-bottom: 3.5rem;
-  background: var(--card);
-  box-shadow: var(--shadow);
-}
-
-#daily .kicker {
-  font-family: var(--sans);
-  font-size: 0.72rem;
-  font-weight: 700;
-  color: var(--acc);
-  letter-spacing: 0.12em;
-  text-transform: uppercase;
-  margin: 0 0 0.6rem;
+  background: var(--bg2);
+  border-radius: 14px;
 }
 
 #daily h2#daily-title {
@@ -282,6 +258,40 @@ nav.main > .dd:hover {
 #daily-text {
   color: var(--fg2);
   line-height: 1.95;
+}
+
+.fade-in {
+  opacity: 0;
+  animation: fadeIn 300ms ease-out 0.05s forwards;
+}
+
+@keyframes fadeIn {
+  to { opacity: 1; }
+}
+
+/* Respect reduced-motion preference */
+@media (prefers-reduced-motion: reduce) {
+  .fade-in {
+    animation: none;
+    opacity: 1;
+  }
+  .controls button {
+    transition: none;
+  }
+  .books a:hover {
+    transform: none;
+  }
+  a {
+    transition: none;
+  }
+  .chap-bar a,
+  .chaps li a,
+  #results a,
+  nav.pn a,
+  form.search input,
+  form.search button {
+    transition: none;
+  }
 }
 
 #daily-text sup {
@@ -304,7 +314,14 @@ nav.main > .dd:hover {
 }
 #daily-link:hover {
   text-decoration: none;
-  color: var(--acc-hover);
+  color: var(--acc2);
+}
+
+.daily-meta {
+  font-family: var(--sans);
+  font-size: 0.85rem;
+  color: var(--mut);
+  margin: 0 0 1.25rem;
 }
 
 /* ---------- Translation pair picker ---------- */
@@ -313,10 +330,8 @@ nav.main > .dd:hover {
   flex-wrap: wrap;
   gap: 0.9rem;
   align-items: end;
-  background: var(--card);
-  border: 1px solid var(--line);
+  background: var(--bg2);
   border-radius: var(--radius);
-  box-shadow: var(--shadow);
   padding: 1rem 1.25rem;
   margin-bottom: 1.75rem;
 }
@@ -334,7 +349,7 @@ nav.main > .dd:hover {
   font-family: var(--sans);
   font-size: 0.95rem;
   color: var(--fg);
-  background: var(--bg2);
+  background: var(--bg);
   border: 1px solid var(--line);
   border-radius: var(--radius-sm);
   padding: 0.5rem 0.7rem;
@@ -347,15 +362,20 @@ nav.main > .dd:hover {
 
 /* ---------- Translation copyrights (home) ---------- */
 .license {
-  border: 1px solid var(--line);
+  background: var(--bg2);
   border-radius: var(--radius);
-  background: var(--card);
-  box-shadow: var(--shadow);
   padding: 1.5rem 1.75rem;
   margin-top: 2.5rem;
   font-family: var(--sans);
   font-size: 0.82rem;
   color: var(--fg2);
+}
+.license h2 {
+  font-family: var(--sans);
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: var(--fg);
+  margin: 0 0 0.6rem;
 }
 .license ul {
   margin: 0.6rem 0 0.8rem 1.1rem;
@@ -370,30 +390,82 @@ nav.main > .dd:hover {
   line-height: 1.7;
 }
 
-/* ---------- Chapter index (home / book list) ---------- */
-.chaps {
-  columns: 3;
+/* ---------- Book grid (home) ---------- */
+.books {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 1.5rem;
+  margin-bottom: 2.5rem;
+}
+.books h2 {
+  font-family: var(--sans);
+  font-size: 1.1rem;
+  font-weight: 600;
+  color: var(--fg);
+  margin: 0 0 1rem;
+  letter-spacing: -0.01em;
+}
+.books ul {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 0.4rem 0.6rem;
   list-style: none;
   margin: 0;
   padding: 0;
-  column-gap: 2rem;
+}
+.books a {
+  font-family: var(--sans);
+  font-size: 1.05rem;
+  font-weight: 500;
+  color: var(--fg);
+  text-decoration: none;
+  padding: 0.3rem 0;
+  display: block;
+  transition: transform 0.2s ease, color 0.2s ease;
+  line-height: 1.3;
+}
+.books a:hover {
+  color: var(--acc);
+  transform: scale(1.03);
+}
+
+@media (max-width: 720px) {
+  .books ul {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (max-width: 480px) {
+  .books ul {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* ---------- Chapter index (list) ---------- */
+.chaps {
+  list-style: none;
+  margin: 0;
+  padding: 0;
 }
 .chaps li a {
-  display: block;
-  padding: 0.55rem 0;
+  display: flex;
+  align-items: center;
+  padding: 0.55rem 0.7rem;
   color: var(--fg);
   font-family: var(--sans);
   font-size: 0.92rem;
   text-decoration: none;
-  border-bottom: 1px solid var(--line);
-  transition: color 0.15s ease;
-}
-.chaps li:last-child a {
-  border-bottom: none;
+  border-radius: 6px;
+  transition: color 0.15s ease, background 0.15s ease;
 }
 .chaps li a:hover {
   color: var(--acc);
   text-decoration: none;
+  background: var(--bg2);
+}
+.chaps li a.active {
+  color: var(--acc);
+  background: var(--bg2);
 }
 
 /* ---------- Chapter content ---------- */
@@ -417,12 +489,11 @@ nav.main > .dd:hover {
 
 h2.sec {
   font-family: var(--sans);
-  font-size: 0.95rem;
-  font-weight: 700;
-  color: var(--acc);
-  letter-spacing: 0.04em;
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: var(--fg);
   margin: 2.75em 0 0.9em;
-  text-transform: uppercase;
+  letter-spacing: 0;
 }
 
 /* Bilingual verse pairs — generous breathing room */
@@ -450,9 +521,10 @@ p.reading.en {
   color: var(--fg2);
   font-size: 0.94em;
   line-height: 1.85;
-  border-left: 2.5px solid var(--acc);
-  padding-left: 1.15rem;
+  background: var(--bg2);
+  padding: 0.6rem 1.15rem;
   margin: 0.25em 0 0;
+  border-radius: 8px;
   text-align: left;
   opacity: 0.92;
 }
@@ -476,13 +548,9 @@ p.reading sup[id]:hover {
 }
 
 /* ---------- Book split reader ---------- */
-.wrap:has(.book-layout) {
-  max-width: 68rem;          /* slightly wider for side panel */
-}
-
 .book-layout {
   display: grid;
-  grid-template-columns: minmax(0, 5.2fr) minmax(0, 1fr);
+  grid-template-columns: minmax(0, 1fr);
   gap: 2.75rem;
   align-items: start;
 }
@@ -500,76 +568,49 @@ p.reading sup[id]:hover {
   letter-spacing: -0.015em;
 }
 
-.book-side {
-  position: sticky;
-  top: 5rem;
-  background: var(--card);
-  border: 1px solid var(--line);
-  border-radius: 16px;
-  padding: 1.15rem 1rem;
-  box-shadow: var(--shadow);
+/* Horizontal chapter tab bar — replaces sticky sidebar */
+.chap-bar {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-bottom: 2rem;
+  overflow-x: auto;
+  overflow-y: hidden;
+  padding-bottom: 0.25rem;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+  scroll-behavior: smooth;
 }
-
-.side-kicker {
-  font-family: var(--sans);
-  font-size: 0.7rem;
-  font-weight: 700;
-  color: var(--acc);
-  letter-spacing: 0.12em;
-  text-transform: uppercase;
-  margin: 0 0 0.7rem;
+.chap-bar::-webkit-scrollbar {
+  display: none;
 }
-
-.chap-btns {
+.chap-bar ol {
+  display: flex;
+  gap: 0.4rem;
   list-style: none;
   margin: 0;
   padding: 0;
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(2.55rem, 1fr));
-  gap: 0.4rem;
-  max-height: 68vh;
-  overflow-y: auto;
+  flex-shrink: 0;
 }
-
-.chap-btns a {
-  display: block;
-  text-align: center;
-  padding: 0.45rem 0;
+.chap-bar a {
   font-family: var(--sans);
-  font-size: 0.86rem;
+  font-size: 0.85rem;
   font-weight: 600;
   color: var(--fg2);
-  background: var(--bg2);
-  border: 1px solid var(--line);
-  border-radius: 10px;
   text-decoration: none;
-  transition: all 0.15s ease;
+  padding: 0.4rem 0.8rem;
+  border-radius: 6px;
+  transition: color 0.15s ease, background 0.15s ease;
+  white-space: nowrap;
 }
-
-.chap-btns a:hover {
-  border-color: var(--acc);
+.chap-bar a:hover {
   color: var(--acc);
-  background: var(--acc-bg);
+  background: var(--bg2);
   text-decoration: none;
 }
-
-.chap-btns a.active {
-  background: var(--acc);
-  border-color: var(--acc);
-  color: #fff;
-}
-
-@media (max-width: 860px) {
-  .book-layout {
-    grid-template-columns: 1fr;
-    gap: 1.75rem;
-  }
-  .book-side {
-    position: static;
-  }
-  .chap-btns {
-    max-height: 11rem;
-  }
+.chap-bar a.active {
+  color: var(--acc);
+  background: var(--bg2);
 }
 
 /* ---------- Prev / Next ---------- */
@@ -579,7 +620,6 @@ nav.pn {
   gap: 1.25rem;
   margin: 4rem 0 0;
   padding-top: 1.75rem;
-  border-top: 1px solid var(--line);
   font-family: var(--sans);
   font-size: 0.88rem;
 }
@@ -599,8 +639,6 @@ nav.pn a {
 nav.pn a:hover {
   border-color: var(--acc);
   color: var(--acc);
-  background: var(--acc-bg);
-  text-decoration: none;
 }
 nav.pn span.empty {
   visibility: hidden;
@@ -618,7 +656,7 @@ form.search input {
   padding: 0.85rem 1.15rem;
   font-size: 1rem;
   font-family: var(--sans);
-  background: var(--card);
+  background: var(--bg);
   color: var(--fg);
   border: 1.5px solid var(--line);
   border-radius: 12px;
@@ -627,7 +665,7 @@ form.search input {
 }
 form.search input:focus {
   border-color: var(--acc);
-  box-shadow: 0 0 0 3px var(--acc-bg);
+  box-shadow: 0 0 0 3px rgba(193, 167, 158, 0.15);
 }
 
 form.search button {
@@ -636,14 +674,14 @@ form.search button {
   font-family: var(--sans);
   font-weight: 600;
   background: var(--acc);
-  color: #fff;
+  color: var(--fg);
   border: none;
   border-radius: 12px;
   cursor: pointer;
   transition: background 0.2s ease, transform 0.15s ease;
 }
 form.search button:hover {
-  background: var(--acc-hover);
+  background: var(--acc2);
 }
 form.search button:active {
   transform: scale(0.98);
@@ -658,18 +696,29 @@ form.search button:active {
   font-size: 0.92rem;
   margin-bottom: 0.75rem;
 }
+#results h3 {
+  font-family: var(--sans);
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: var(--mut);
+  margin: 1.25rem 0 0.5rem;
+}
+#results h3:first-child {
+  margin-top: 0;
+}
 #results a {
   display: block;
-  padding: 0.55rem 0.9rem;
-  border-radius: 8px;
-  transition: background 0.15s ease;
+  padding: 0.45rem 0.6rem;
+  border-radius: 6px;
   font-family: var(--sans);
   font-size: 0.92rem;
   color: var(--fg);
   text-decoration: none;
+  transition: background 0.15s ease, color 0.15s ease;
 }
 #results a:hover {
-  background: var(--acc-bg);
+  color: var(--acc);
+  background: var(--bg2);
   text-decoration: none;
 }
 
@@ -683,6 +732,24 @@ footer.site {
   font-family: var(--sans);
   text-align: center;
 }
+footer .wrap {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 1rem;
+  padding: 0 2rem 1.75rem;
+}
+footer .credit {
+  color: var(--fg2);
+  font-size: 0.82rem;
+}
+footer .credit:hover {
+  color: var(--acc);
+}
+
+/* ---------- Favicon ---------- */
+/* Referenced via <link> in page.html */
 
 /* ---------- Print ---------- */
 @media print {
@@ -691,7 +758,8 @@ footer.site {
   nav.pn,
   form.search,
   .crumb,
-  .book-side {
+  .chap-bar,
+  footer.site {
     display: none !important;
   }
   .wrap {
@@ -705,13 +773,12 @@ footer.site {
     background: #fff;
   }
   #daily {
-    border: none;
-    box-shadow: none;
     background: none;
     padding: 0;
   }
   p.reading.en {
-    border-left-color: #999;
+    background: none;
+    padding: 0;
   }
   p.reading sup {
     color: #555;
@@ -719,7 +786,7 @@ footer.site {
   }
 }
 
-/* ---------- Responsive refinements ---------- */
+/* ---------- Responsive ---------- */
 @media (max-width: 720px) {
   .wrap {
     padding: 0 1.25rem 4rem;
@@ -730,10 +797,6 @@ footer.site {
   #daily {
     padding: 1.75rem 1.5rem;
     border-radius: 14px;
-  }
-  .chaps {
-    columns: 2;
-    column-gap: 1.25rem;
   }
   .chapter-meta h1 {
     font-size: 1.65rem;
@@ -748,13 +811,14 @@ footer.site {
 
 @media (max-width: 480px) {
   :root {
-    --fs: 17px;
+    --fs: 18px;
   }
   .wrap {
     padding: 0 1rem 3.5rem;
   }
-  .chaps {
-    columns: 1;
+  .pair-picker {
+    flex-direction: column;
+    align-items: stretch;
   }
   #daily {
     padding: 1.5rem 1.25rem;
@@ -766,6 +830,7 @@ footer.site {
     width: 100%;
   }
   .controls button {
-    padding: 0.28rem 0.5rem;
+    min-width: 44px;
+    min-height: 44px;
   }
 }

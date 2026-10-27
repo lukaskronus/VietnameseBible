@@ -47,14 +47,14 @@ function renderPair(viBlocks, enBlocks) {
     var vv = mVi[n] || "";
     var ee = mEn[n] || "";
     if (!vv && !ee) continue;
-    h += '<div class="verse-pair"><p class="reading vi"><sup>' + n + "</sup>" + esc(vv) + "</p>";
+    h += '<div class="verse-pair fade-in"><p class="reading vi"><sup>' + n + "</sup>" + esc(vv) + "</p>";
     if (ee) h += '<p class="reading en" lang="en"><sup>' + n + "</sup>" + esc(ee) + "</p>";
     h += "</div>";
   }
   return h;
 }
 function markActive(n) {
-  var ls = document.querySelectorAll(".chap-btns a");
+  var ls = document.querySelectorAll(".chap-bar a");
   for (var i = 0; i < ls.length; i++) {
     if (ls[i].getAttribute("data-n") === String(n)) {
       ls[i].classList.add("active");
@@ -64,7 +64,7 @@ function markActive(n) {
   }
 }
 function currentCid() {
-  var a = document.querySelector(".chap-btns a.active");
+  var a = document.querySelector(".chap-bar a.active");
   return a ? a.getAttribute("data-cid") : null;
 }
 function loadChapter(cid, push) {
@@ -109,7 +109,7 @@ function loadChapter(cid, push) {
       box.innerHTML = "<p>Không tải được chương này.</p>";
     });
 }
-var btns = document.querySelectorAll(".chap-btns a");
+var btns = document.querySelectorAll(".chap-bar a");
 for (var i = 0; i < btns.length; i++) {
   (function (a) {
     a.addEventListener("click", function (e) {
