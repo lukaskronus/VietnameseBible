@@ -396,12 +396,11 @@ def main():
     first_book = sorted(books, key=lambda b: b["position"])[0]
     home = (
         "<div class=\"masthead\">\n"
-        "<h1>Kinh Thánh Song Ngữ</h1>\n"
-        "<p>%d bản dịch Việt – Anh, trọn %d sách và %d chương. "
-        "Mỗi ngày một đoạn.</p>\n</div>\n"
+        "<h1>Đọc song song Việt – Anh</h1>\n"
+        "<p>%d bản dịch, trọn %d sách và %d chương.</p>\n</div>\n"
         "<section id=\"daily\">\n"
         "<div class=\"daily-head\">\n%s\n</div>\n"
-        "<h2 id=\"daily-title\">…</h2>\n"
+        "<h2 id=\"daily-title\">Đoạn Kinh Thánh hôm nay</h2>\n"
         "<p id=\"daily-meta\" class=\"daily-meta\">Đang tải…</p>\n"
         "<div id=\"daily-text\"><p>Đang tải…</p></div>\n"
         "<p><a id=\"daily-link\" href=\"#\">Đọc cả đoạn →</a></p>\n"

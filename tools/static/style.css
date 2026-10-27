@@ -246,26 +246,28 @@ nav.main > a:hover,
 .crumb a { color: var(--muted); }
 .crumb a:hover { color: var(--rubric); }
 
-/* ---------- Home masthead ---------- */
+/* ---------- Home masthead (two lines: name, then what the site is) ---------- */
 .masthead {
-  padding: clamp(2.5rem, 7vw, 5.5rem) 0 clamp(2rem, 4vw, 3rem);
+  padding: clamp(1.25rem, 2.5vw, 1.75rem) 0 clamp(1.5rem, 3vw, 2.25rem);
   max-width: 46rem;
 }
+/* The wordmark above already sets the name; the h1 exists for the document
+   outline, so it stays at body scale and weight instead of shouting. */
 .masthead h1 {
   font-family: var(--serif);
-  font-size: clamp(2.6rem, 7vw, 4.5rem);
+  font-size: clamp(1.375rem, 1rem + 1.1vw, 1.625rem);
   text-wrap: balance;
-  font-weight: 600;
-  line-height: 0.98;
-  letter-spacing: -0.03em;
+  font-weight: 500;
+  line-height: 1.2;
+  letter-spacing: 0;
 }
 .masthead p {
   font-family: var(--sans);
-  font-size: var(--step-lead);
-  line-height: 1.45;
-  color: var(--ink-2);
-  margin-top: 1.25rem;
-  max-width: 34rem;
+  font-size: 0.9375rem;
+  line-height: 1.5;
+  color: var(--muted);
+  margin-top: 0.5rem;
+  max-width: 40rem;
 }
 
 /* ---------- Verse of the day ---------- */
