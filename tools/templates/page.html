@@ -5,15 +5,14 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="kt-base" content="${bp}">
 <meta name="description" content="${desc}">
+<meta name="theme-color" content="#f7f6f2">
 <title>${title}</title>
 
-<!-- Favicon -->
 <link rel="icon" href="${bp}/favicon.svg" type="image/svg+xml" sizes="any">
 
-<!-- Elegant typography: Spectral for scripture, Source Sans 3 for interface -->
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Spectral:ital,wght@0,400;0,500;0,600;0,700;1,400;1,500&family=Source+Sans+3:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600&family=Literata:ital,wght@0,400;0,500;0,600;1,400;1,500&display=swap" rel="stylesheet">
 
 <link rel="stylesheet" href="${bp}/assets/style.css">
 
@@ -23,6 +22,7 @@ try {
   if (t) document.documentElement.dataset.theme = t;
   var f = localStorage.getItem("kt-fs");
   if (f) document.documentElement.style.setProperty("--fs", f + "px");
+  if (localStorage.getItem("kt-en-show") === "0") document.documentElement.dataset.en = "off";
 } catch (e) {}
 </script>
 ${head_extra}
@@ -30,19 +30,22 @@ ${head_extra}
 <body>
 <header class="top">
   <div class="bar">
-    <a class="brand" href="${bp}/">Kinh Thánh Song Ngữ Việt – Anh</a>
+    <a class="brand" href="${bp}/">Kinh Thánh Song Ngữ<small>Đọc song song Việt – Anh</small></a>
     <nav class="main">
       <a href="${bp}/">Trang chủ</a>
       ${nav_extra}
       <a href="${bp}/tim-kiem/">Tìm kiếm</a>
     </nav>
     <div class="controls">
-      <button id="fs-dec" title="Chữ nhỏ hơn" aria-label="Giảm cỡ chữ">−</button>
-      <button id="fs-inc" title="Chữ lớn hơn" aria-label="Tăng cỡ chữ">+</button>
-      <button id="theme-btn" title="Chế độ sáng / tối" aria-label="Đổi giao diện" aria-pressed="false">◐</button>
+      <button id="en-btn" type="button" title="Hiện hoặc ẩn bản tiếng Anh" aria-label="Hiện hoặc ẩn bản tiếng Anh" aria-pressed="true">EN</button>
+      <button id="fs-dec" type="button" title="Chữ nhỏ hơn" aria-label="Giảm cỡ chữ">A−</button>
+      <button id="fs-inc" type="button" title="Chữ lớn hơn" aria-label="Tăng cỡ chữ">A+</button>
+      <button id="theme-btn" type="button" title="Chế độ sáng / tối" aria-label="Đổi giao diện" aria-pressed="false">◐</button>
     </div>
   </div>
 </header>
+
+<div class="progress" id="progress" aria-hidden="true"></div>
 
 <main class="wrap">
 ${body}
@@ -51,7 +54,7 @@ ${body}
 <footer class="site">
   <div class="wrap">
     <span>${site_name}</span>
-    <a class="credit" href="https://github.com/lukaskronus/VietnameseBible" target="_blank" rel="noopener noreferrer" title="Xem nguồn trên GitHub">Code & design · Hirose Kobayashi</a>
+    <a class="credit" href="https://github.com/lukaskronus/VietnameseBible" target="_blank" rel="noopener noreferrer" title="Xem nguồn trên GitHub">Code &amp; design · Hirose Kobayashi</a>
   </div>
 </footer>
 </body>

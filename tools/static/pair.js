@@ -2,8 +2,14 @@
 (function () {
   var VI_KEY = "kt-vi";
   var EN_KEY = "kt-en";
-  var DEF_VI = "vi1925";
-  var DEF_EN = "ennasb";
+  // Defaults come from the server-rendered <option selected>; never hardcode
+  // a translation code here, both pipelines use different ones.
+  function rendered(id) {
+    var el = document.getElementById(id);
+    return el ? el.value : "";
+  }
+  var DEF_VI = rendered("pair-vi");
+  var DEF_EN = rendered("pair-en");
   function store(k, v) {
     try {
       localStorage.setItem(k, v);

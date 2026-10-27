@@ -10,10 +10,6 @@ function base() {
   var b = document.querySelector('meta[name="kt-base"]');
   return b ? b.content : "";
 }
-function pairOf() {
-  if (window.ktPair) return window.ktPair.get();
-  return { vi: "vi1925", en: "ennasb" };
-}
 function biTitle(vi, en) {
   var t = vi.book + " " + vi.n;
   if (en.book) t += " · " + en.book + " " + en.n;
@@ -47,7 +43,7 @@ function renderPair(viBlocks, enBlocks) {
     var vv = mVi[n] || "";
     var ee = mEn[n] || "";
     if (!vv && !ee) continue;
-    h += '<div class="verse-pair fade-in"><p class="reading vi"><sup>' + n + "</sup>" + esc(vv) + "</p>";
+    h += '<div class="verse-pair"><p class="reading vi"><sup>' + n + "</sup>" + esc(vv) + "</p>";
     if (ee) h += '<p class="reading en" lang="en"><sup>' + n + "</sup>" + esc(ee) + "</p>";
     h += "</div>";
   }
@@ -70,7 +66,7 @@ function currentCid() {
 function loadChapter(cid, push) {
   var box = document.getElementById("bk-content");
   if (!box) return;
-  var p = pairOf();
+  var p = window.ktPair.get();
   var bp = base();
   box.innerHTML = "<p>Đang tải…</p>";
   Promise.all([

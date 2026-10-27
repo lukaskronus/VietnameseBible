@@ -10,10 +10,15 @@ function ktGet(id) {
 var themeBtn = ktGet("theme-btn");
 function ktUpdateThemeBtn() {
   if (!themeBtn) return;
-  var h = document.documentElement;
-  var isDark = h.dataset.theme === "dark";
-  themeBtn.textContent = isDark ? "Tối" : "Sáng";
-  themeBtn.setAttribute("aria-pressed", isDark);
+  var dark = document.documentElement.dataset.theme === "dark";
+  themeBtn.textContent = dark ? "☀" : "☾";
+  themeBtn.setAttribute("aria-pressed", dark);
+  themeBtn.title = dark ? "Chuyển sang nền sáng" : "Chuyển sang nền tối";
+  var meta = document.querySelector('meta[name="theme-color"]');
+  // --paper, not body background: the body background transitions, so reading
+  // it right after a theme switch returns the old colour.
+  if (meta) meta.content = getComputedStyle(
+    document.documentElement).getPropertyValue("--paper").trim();
 }
 if (themeBtn) {
   themeBtn.onclick = function () {
@@ -30,7 +35,7 @@ if (themeBtn) {
 /* Font-size controls */
 function ktFs(delta) {
   var h = document.documentElement;
-  var cur = parseInt(getComputedStyle(h).getPropertyValue("--fs"), 10) || 18;
+  var cur = parseInt(getComputedStyle(h).getPropertyValue("--fs"), 10) || 19;
   var next = Math.min(26, Math.max(14, cur + delta));
   h.style.setProperty("--fs", next + "px");
   try {
@@ -43,23 +48,103 @@ var fb = ktGet("fs-inc");
 if (fa) fa.onclick = function () { ktFs(-1); };
 if (fb) fb.onclick = function () { ktFs(1); };
 
-/* Dropdown menus */
+/* English translation on/off */
+var enBtn = ktGet("en-btn");
+function ktUpdateEnBtn() {
+  if (!enBtn) return;
+  var off = document.documentElement.dataset.en === "off";
+  enBtn.setAttribute("aria-pressed", off ? "false" : "true");
+  enBtn.title = off ? "Hiện bản tiếng Anh" : "Ẩn bản tiếng Anh";
+}
+if (enBtn) {
+  enBtn.onclick = function () {
+    var h = document.documentElement;
+    var off = h.dataset.en === "off";
+    if (off) {
+      h.removeAttribute("data-en");
+    } else {
+      h.dataset.en = "off";
+    }
+    try {
+      localStorage.setItem("kt-en-show", off ? "1" : "0");
+    } catch (e) {}
+    ktUpdateEnBtn();
+  };
+}
+
+/* Testament menus */
+function ktCloseDd(except) {
+  document.querySelectorAll(".dd").forEach(function (d) {
+    if (d !== except) {
+      d.classList.remove("open");
+      var b = d.querySelector("button");
+      if (b) b.setAttribute("aria-expanded", "false");
+    }
+  });
+}
 document.querySelectorAll(".dd").forEach(function (el) {
   el.addEventListener("click", function (e) {
     e.stopPropagation();
-    var wasOpen = el.classList.contains("open");
-    document.querySelectorAll(".dd").forEach(function (d) {
-      d.classList.remove("open");
-    });
-    if (!wasOpen) el.classList.add("open");
+    var open = !el.classList.contains("open");
+    ktCloseDd(el);
+    el.classList.toggle("open", open);
+    var b = el.querySelector("button");
+    if (b) b.setAttribute("aria-expanded", open ? "true" : "false");
   });
 });
-
 document.addEventListener("click", function () {
-  document.querySelectorAll(".dd").forEach(function (d) {
-    d.classList.remove("open");
-  });
+  ktCloseDd();
+});
+document.addEventListener("keydown", function (e) {
+  if (e.key === "Escape") ktCloseDd();
 });
 
-/* Init theme button label */
+/* Reading progress */
+var prog = ktGet("progress");
+function ktProgress() {
+  if (!prog) return;
+  var h = document.documentElement;
+  var max = h.scrollHeight - h.clientHeight;
+  prog.style.width = (max > 0 ? (h.scrollTop / max) * 100 : 0) + "%";
+}
+if (prog && (ktGet("bk-content") || document.querySelector(".verse-pair"))) {
+  document.body.dataset.reader = "1";
+  window.addEventListener("scroll", ktProgress, { passive: true });
+  window.addEventListener("resize", ktProgress);
+  ktProgress();
+}
+
+/* Arrow keys turn the page */
+document.addEventListener("keydown", function (e) {
+  if (e.altKey || e.ctrlKey || e.metaKey) return;
+  if (e.key !== "ArrowLeft" && e.key !== "ArrowRight") return;
+  var t = e.target;
+  if (t && (t.tagName === "INPUT" || t.tagName === "SELECT" ||
+            t.tagName === "TEXTAREA" || t.isContentEditable)) return;
+
+  var links = document.querySelectorAll("nav.pn a");
+  if (links.length) {
+    var link = e.key === "ArrowLeft" ? links[0] : links[links.length - 1];
+    if (link && link.href) window.location.href = link.href;
+    return;
+  }
+  var bar = document.querySelectorAll(".chap-bar a");
+  for (var i = 0; i < bar.length; i++) {
+    if (bar[i].classList.contains("active")) {
+      var j = e.key === "ArrowLeft" ? i - 1 : i + 1;
+      if (j >= 0 && j < bar.length) bar[j].click();
+      return;
+    }
+  }
+});
+
 ktUpdateThemeBtn();
+ktUpdateEnBtn();
+
+/* Phone: the 66-book index starts collapsed; a tap on either testament opens it.
+   Breakpoint must stay equal to the 720px media query in style.css. */
+if (window.matchMedia && window.matchMedia("(max-width: 720px)").matches) {
+  document.querySelectorAll(".index-col").forEach(function (el) {
+    el.open = false;
+  });
+}

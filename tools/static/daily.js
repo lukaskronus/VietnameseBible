@@ -11,10 +11,6 @@ function base() {
   return b ? b.content : "";
 }
 var CHS = null;
-function pairOf() {
-  if (window.ktPair) return window.ktPair.get();
-  return { vi: "vi1925", en: "ennasb" };
-}
 function mergeBlocks(viBlocks, enBlocks) {
   var mVi = {};
   var mEn = {};
@@ -46,7 +42,7 @@ function mergeBlocks(viBlocks, enBlocks) {
     var vv = mVi[n] || "";
     var ee = mEn[n] || "";
     if (!vv && !ee) continue;
-    h += '<div class="verse-pair fade-in"><p class="reading vi"><sup>' + n + "</sup>" + esc(vv) + "</p>";
+    h += '<div class="verse-pair"><p class="reading vi"><sup>' + n + "</sup>" + esc(vv) + "</p>";
     if (ee) h += '<p class="reading en" lang="en"><sup>' + n + "</sup>" + esc(ee) + "</p>";
     h += "</div>";
   }
@@ -58,7 +54,7 @@ function biTitle(vi, en) {
   return t;
 }
 function loadDaily() {
-  var p = pairOf();
+  var p = window.ktPair.get();
   var bp = base();
   function chs() {
     if (CHS) return Promise.resolve(CHS);

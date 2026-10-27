@@ -107,8 +107,8 @@ def main():
         return 1
     meta = payload.get("meta", {})
     translations = meta.get("translations", {})
-    default_vi = meta.get("default_vi", "vi1925")
-    default_en = meta.get("default_en", "ennasb")
+    default_vi = meta.get("default_vi", "")
+    default_en = meta.get("default_en", "")
     if default_vi not in translations or default_en not in translations:
         print("error: default pair missing from translations meta",
               file=sys.stderr)
@@ -179,8 +179,12 @@ def main():
 
     ot_books = [b for b in books if b["testament"] == "OT"]
     nt_books = [b for b in books if b["testament"] != "OT"]
-    nav_dd = ("<div class=\"dd\">Cựu Ước%s</div>"
-              "<div class=\"dd\">Tân Ước%s</div>"
+    nav_dd = ("<div class=\"dd\">"
+              "<button type=\"button\" aria-expanded=\"false\">Cựu Ước</button>%s"
+              "</div>"
+              "<div class=\"dd\">"
+              "<button type=\"button\" aria-expanded=\"false\">Tân Ước</button>%s"
+              "</div>"
               % (dd_menu(ot_books), dd_menu(nt_books)))
 
     def url_of(cid):
@@ -197,23 +201,52 @@ def main():
                                       c["book_en"], c["n"])
         return "%s %d" % (c["book"], c["n"])
 
+    def book_index():
+        """Printed table of contents: every book, its English name, chapters."""
+        def col(title, items):
+            rows = "".join(
+                "<li><a href=\"%s/%s/\">"
+                "<span class=\"bk-name\">%s</span>"
+                "%s"
+                "<span class=\"bk-n\">%d ch.</span></a></li>"
+                % (bp, b["slug"], esc(btitle(b)),
+                   ("<span class=\"bk-en\" lang=\"en\">%s</span>"
+                    % esc(btitle_en(b))) if btitle_en(b) else "",
+                   len(b["chapters"]))
+                for b in sorted(items, key=lambda b: b["position"]))
+            return ("<details class=\"index-col\" open>\n"
+                    "<summary>%s <span>%d sách</span></summary>\n"
+                    "<ol class=\"books\">%s</ol>\n</details>"
+                    % (title, len(items), rows))
+        return (
+            "<section class=\"index\">\n"
+            "<div class=\"index-head\"><h2>Mục lục</h2>"
+            "<p>%d sách · %d chương</p></div>\n"
+            "<div class=\"index-cols\">\n%s\n%s\n</div>\n</section>"
+            % (len(books), total, col("Cựu Ước", ot_books),
+               col("Tân Ước", nt_books)))
+
+    def chapter_register(book, cids, active_n):
+        """Chapter register; book.js intercepts the links into a fetch."""
+        links = "".join(
+            "<li><a href=\"%s/%s/%d/\" data-cid=\"%d\" data-n=\"%d\"%s>%d</a></li>"
+            % (bp, book["slug"], n, c, n,
+               " class=\"active\"" if n == active_n else "", n)
+            for n, c in cids)
+        return (
+            "<aside class=\"reader-rail\">\n"
+            "<p class=\"rail-label\"><a href=\"%s/%s/\">%s</a></p>\n"
+            "<nav class=\"chap-bar\" aria-label=\"Các chương\">\n"
+            "<ol>%s</ol>\n</nav>\n</aside>"
+            % (bp, book["slug"], esc(btitle(book)), links))
+
     # ---- shared assets (minified for output) --------------------------------
     write(os.path.join(out, "assets", "style.css"), minify_css(CSS_SRC))
     write(os.path.join(out, "assets", "app.js"), minify_js(APP_JS_SRC))
     write(os.path.join(out, "assets", "search.js"), minify_js(SEARCH_JS_SRC))
     write(os.path.join(out, "assets", "daily.js"), minify_js(DAILY_JS_SRC))
-    book_js_src = BOOK_JS_SRC
-    book_js_src = book_js_src.replace('vi: "vi1925", en: "ennasb"',
-                                      'vi: "%s", en: "%s"' % (default_vi, default_en))
-    write(os.path.join(out, "assets", "book.js"),
-          minify_js(book_js_src))
-    pair_js_src = PAIR_JS_SRC
-    pair_js_src = pair_js_src.replace('var DEF_VI = "vi1925";',
-                                      'var DEF_VI = "%s";' % default_vi)
-    pair_js_src = pair_js_src.replace('var DEF_EN = "ennasb";',
-                                      'var DEF_EN = "%s";' % default_en)
-    write(os.path.join(out, "assets", "pair.js"),
-          minify_js(pair_js_src))
+    write(os.path.join(out, "assets", "book.js"), minify_js(BOOK_JS_SRC))
+    write(os.path.join(out, "assets", "pair.js"), minify_js(PAIR_JS_SRC))
     # Favicon (SVG at root, referenced by <link> in template)
     favicon_src = (STATIC_DIR / "favicon.svg").read_text("utf-8")
     write(os.path.join(out, "favicon.svg"), favicon_src)
@@ -262,10 +295,11 @@ def main():
     for book in sorted(books, key=lambda b: b["position"]):
         title_vi = btitle(book)
         title_en = btitle_en(book)
-        book_cids = []  # (chapter number, chapter id) for the chapter bar
-        for ch in book["chapters"]:
-            cid += 1
-            book_cids.append((ch["number"], cid))
+        # chapter ids are global canon order; the register needs them up front
+        book_cids = [(ch["number"], cid + 1 + i)
+                     for i, ch in enumerate(book["chapters"])]
+        for i, ch in enumerate(book["chapters"]):
+            cid = book_cids[i][1]
             blocks_html = render_blocks(ch["number"], ch["blocks"])
             pn = "<nav class=\"pn\">"
             if cid > 1:
@@ -284,18 +318,18 @@ def main():
                 sub += "<p>%s</p>" % esc(book["subtitle"])
             if book.get("range"):
                 sub += "<p class=\"crumb\">%s</p>" % esc(book["range"])
-            if title_en:
-                sub += ("<p class=\"crumb\" lang=\"en\">%s</p>"
-                        % esc(title_en))
             h1 = "%s %d" % (title_vi, ch["number"])
             h1_bi = h1 if not title_en else "%s · %s %d" % (
                 h1, title_en, ch["number"])
-            body = ("<p class=\"crumb\"><a href=\"%s/\">%s</a> / "
-                    "<a href=\"%s/%s/\">%s</a></p>\n"
-                    "<div class=\"chapter-meta\"><h1>%s</h1>\n%s</div>\n%s\n%s"
-                    % (bp, esc(SITE_NAME), bp, book["slug"],
-                       esc(title_vi), esc(h1_bi),
-                       sub, "\n".join(blocks_html), pn))
+            body = (
+                "<div class=\"reader\">\n<article class=\"reader-main\">\n"
+                "<p class=\"crumb\"><a href=\"%s/\">%s</a> / "
+                "<a href=\"%s/%s/\">%s</a></p>\n"
+                "<div class=\"chapter-meta\"><h1>%s</h1>\n%s</div>\n%s\n%s\n"
+                "</article>\n%s\n</div>"
+                % (bp, esc(SITE_NAME), bp, book["slug"], esc(title_vi),
+                   esc(h1_bi), sub, "\n".join(blocks_html), pn,
+                   chapter_register(book, book_cids, ch["number"])))
             write(os.path.join(out, book["slug"], str(ch["number"]),
                                "index.html"),
                   page(bp, "%s | %s" % (h1_bi, SITE_NAME),
@@ -322,40 +356,33 @@ def main():
                                  ensure_ascii=False,
                                  separators=(",", ":")) + "\n")
 
-        # book page: split reader -- chapter content left, chapter bar top.
-        # Default-pair chapter 1 is embedded statically; switching
-        # chapters or translations loads data/tr/<code>/ch/<id>.json via
-        # book.js (no page reload). Chapter links are plain links, so the page
-        # works without JavaScript too.
+        # book page: reader -- verses left, chapter register in the margin.
+        # Default-pair chapter 1 is embedded statically; switching chapters
+        # or translations loads data/tr/<code>/ch/<id>.json via book.js (no
+        # page reload). Chapter links are plain links, so the page works
+        # without JavaScript too.
         first_html = render_blocks(book["chapters"][0]["number"],
                                    book["chapters"][0]["blocks"])
         first_n = book["chapters"][0]["number"]
         h1_book = title_vi if not title_en else "%s · %s" % (
             title_vi, title_en)
-        btns = "".join(
-            "<li><a href=\"%s/%s/%d/\" data-cid=\"%d\" data-n=\"%d\"%s>%d</a></li>"
-            % (bp, book["slug"], n, c, n,
-               " class=\"active\"" if n == first_n else "", n)
-            for n, c in book_cids)
         ch1_bi = ("%s %d" % (title_vi, first_n) if not title_en
                   else "%s %d · %s %d" % (title_vi, first_n,
                                           title_en, first_n))
         body = (
-            "<div class=\"book-layout\" data-site=\"%s\">\n"
-            "<section class=\"book-main\">\n"
+            "<div class=\"reader book-layout\" data-site=\"%s\">\n"
+            "<article class=\"reader-main\">\n"
             "<p class=\"crumb\"><a href=\"%s/\">%s</a> / "
             "<a href=\"%s/%s/\">%s</a></p>\n"
             "<div class=\"chapter-meta\"><h1>%s</h1>\n%s</div>\n"
-            "%s\n"
-            "<nav class=\"chap-bar\">\n"
-            "<ol>%s</ol>\n"
-            "</nav>\n"
+            "<div class=\"book-tools\">%s</div>\n"
             "<h2 class=\"bk-ch\" id=\"bk-ch-title\">%s</h2>\n"
             "<div id=\"bk-content\">\n%s\n</div>\n"
-            "</section>\n</div>"
+            "</article>\n%s\n</div>"
             % (esc(SITE_NAME), bp, esc(SITE_NAME), bp, book["slug"],
                esc(title_vi), esc(h1_book), sub, pair_picker(),
-               btns, esc(ch1_bi), "\n".join(first_html)))
+               esc(ch1_bi), "\n".join(first_html),
+               chapter_register(book, book_cids, first_n)))
         write(os.path.join(out, book["slug"], "index.html"),
               page(bp, "%s | %s" % (h1_book, SITE_NAME),
                    h1_book, body, ("app.js", "pair.js", "book.js"), nav_dd))
@@ -363,30 +390,39 @@ def main():
 
     # ---- home -------------------------------------------------------------
     # Daily = deterministic full-cycle shuffle over 1189 chapters, rendered
-    # in the chosen pair (default 1925-VI + NASB 1995) via daily.js + pair.js.
+    # in the chosen pair (the meta default) via daily.js + pair.js.
     first_book = sorted(books, key=lambda b: b["position"])[0]
-    home = (pair_picker()
-            + "<section id=\"daily\">\n"
-            "<h2 id=\"daily-title\">…</h2>\n"
-            "<p id=\"daily-meta\" class=\"daily-meta\">Đang tải…</p>\n"
-            "<div id=\"daily-text\"><p>Đang tải…</p></div>\n"
-            "<p><a id=\"daily-link\" href=\"#\">"
-            "Đọc cả đoạn →</a></p>\n"
-            "<noscript><p><a href=\"%s/%s/1/\">"
-            "%s 1</a></p></noscript></section>\n"
-            % (bp, first_book["slug"], esc(btitle(first_book)))
-            + license_section())
+    home = (
+        "<div class=\"masthead\">\n"
+        "<h1>Kinh Thánh Song Ngữ</h1>\n"
+        "<p>%d bản dịch Việt – Anh, trọn %d sách và %d chương. "
+        "Mỗi ngày một đoạn.</p>\n</div>\n"
+        "<section id=\"daily\">\n"
+        "<div class=\"daily-head\">\n%s\n</div>\n"
+        "<h2 id=\"daily-title\">…</h2>\n"
+        "<p id=\"daily-meta\" class=\"daily-meta\">Đang tải…</p>\n"
+        "<div id=\"daily-text\"><p>Đang tải…</p></div>\n"
+        "<p><a id=\"daily-link\" href=\"#\">Đọc cả đoạn →</a></p>\n"
+        "<noscript><p><a href=\"%s/%s/1/\">%s 1</a></p></noscript></section>\n"
+        % (len(translations), len(books), total, pair_picker(), bp,
+           first_book["slug"], esc(btitle(first_book)))
+        + book_index()
+        + license_section())
     write(os.path.join(out, "index.html"),
           page(bp, SITE_NAME, SITE_NAME,
                home, ("app.js", "pair.js", "daily.js"), nav_dd))
 
     # ---- search -----------------------------------------------------------
-    search_body = ("<div class=\"chapter-meta\"><h1>Tìm kiếm</h1></div>\n"
+    search_body = ("<div class=\"page\"><div class=\"chapter-meta\">"
+                   "<h1>Tìm kiếm</h1>"
+                   "<p class=\"sub\">Tìm theo từ hoặc cụm từ, "
+                   "không cần gõ dấu.</p></div>\n"
                    "<form id=\"search-form\" class=\"search\">"
                    "<input id=\"q\" name=\"q\" autocomplete=\"off\" "
+                   "aria-label=\"Từ cần tìm\" "
                    "placeholder=\"Ví dụ: Giê-hô-va\">"
                    "<button type=\"submit\">Tìm</button></form>\n"
-                   "<div id=\"results\"></div>")
+                   "<div id=\"results\"></div></div>")
     write(os.path.join(out, "tim-kiem", "index.html"),
           page(bp, "Tìm kiếm | %s" % SITE_NAME,
                "Tìm kiếm Kinh Thánh", search_body,
@@ -405,8 +441,8 @@ def main():
           "User-agent: *\nAllow: /\nSitemap: %ssitemap.xml\n" % root)
     write(os.path.join(out, "404.html"),
           page(bp, "Không tìm thấy | %s" % SITE_NAME, "",
-               "<h1>404</h1><p>Trang bạn tìm không tồn "
-               "tại. <a href=\"%s/\">Về trang chủ</a>.</p>" % bp,
+               "<div class=\"page\"><h1>404</h1><p>Trang bạn tìm không "
+               "tồn tại. <a href=\"%s/\">Về trang chủ</a>.</p></div>" % bp,
                ("app.js",), nav_dd))
 
     # ---- zip ---------------------------------------------------------------
