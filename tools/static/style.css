@@ -1,49 +1,46 @@
 /* ============================================================
-   Kinh Thánh Song Ngữ — Refined Elegant Reading Stylesheet
-   Soft dusty-peach pastel (light) · Warm dark (dark)
+   Kinh Thánh Song Ngữ — Refined Reading Stylesheet
+   Warm parchment (light) · Cool slate (dark)
    Spectral for scripture · Source Sans 3 for UI chrome
    ============================================================ */
 
-/* ---------- Google Fonts (loaded in template) ---------- */
-/* Spectral: biblical text | Source Sans 3: UI chrome */
-
 :root {
-  /* Soft off-white ground */
-  --bg:        #fbf9f6;
-  --bg2:       #f0ece7;
-  --fg:        #3a3631;
-  --fg2:       #8c8279;
-  --mut:       #6b6259;
-  --acc:       #c1a79e;          /* dusty peach pastel */
-  --acc2:      #b0968a;
-  --line:      #e6d9c8;
-  --shadow:    none;
-  --shadow-lg: none;
+  --bg:        #f8f4ed;     /* warm parchment */
+  --bg2:       #f0ead6;     /* parchment secondary */
+  --fg:        #2d2926;     /* deep charcoal */
+  --fg2:       #5a524a;     /* medium gray */
+  --mut:       #8c8279;     /* muted gray */
+  --acc:       #b87a5c;     /* warm terracotta */
+  --acc2:      #a0684c;     /* darker terracotta */
+  --acc-hover: #c48b6a;
+  --acc-bg:    rgba(184, 122, 92, 0.10);
+  --line:      #e6d9c8;     /* warm divider */
+  --card:      #fff9f5;     /* warm card */
+  --shadow:    0 2px 12px rgba(184, 122, 92, 0.06);
+  --shadow-lg: 0 8px 28px rgba(184, 122, 92, 0.08);
 
-  /* Typography */
   --serif: "Spectral", "Noto Serif", Georgia, "Times New Roman", serif;
   --sans:  "Source Sans 3", system-ui, -apple-system, "Segoe UI", sans-serif;
-  --fs: 20px;
+  --fs: 19px;
 
-  /* Spacing rhythm */
-  --space-xs: 0.35rem;
-  --space-sm: 0.65rem;
-  --space-md: 1.25rem;
-  --space-lg: 2rem;
-  --space-xl: 3.25rem;
-  --radius:   12px;
-  --radius-sm: 6px;
+  --radius:   14px;
+  --radius-sm: 8px;
 }
 
 html[data-theme="dark"] {
   --bg:        #161719;
   --bg2:       #252628;
   --fg:        #d6d2ca;
-  --fg2:       #949ca3;
-  --mut:       #6b7280;
-  --acc:       #a18c83;
-  --acc2:      #8a7c70;
+  --fg2:       #b4bcc9;
+  --mut:       #7a8496;
+  --acc:       #a89bc4;         /* slate-lavender */
+  --acc2:      #9488b0;
+  --acc-hover: #b8acd4;
+  --acc-bg:    rgba(168, 155, 196, 0.12);
   --line:      #3a3a3f;
+  --card:      #22262e;
+  --shadow:    0 2px 12px rgba(0, 0, 0, 0.22);
+  --shadow-lg: 0 8px 28px rgba(0, 0, 0, 0.30);
 }
 
 /* ---------- Base ---------- */
@@ -61,7 +58,7 @@ html {
 body {
   background: var(--bg);
   color: var(--fg);
-  font: var(--fs) / 1.7 var(--serif);
+  font: var(--fs) / 1.8 var(--serif);
   -webkit-font-smoothing: antialiased;
   text-rendering: optimizeLegibility;
   transition: background 0.35s ease, color 0.35s ease;
@@ -73,22 +70,26 @@ a {
   transition: color 0.2s ease;
 }
 a:hover {
-  color: var(--acc2);
+  color: var(--acc-hover);
 }
 
 /* ---------- Layout shell ---------- */
 .wrap {
   max-width: 58rem;
   margin: 0 auto;
-  padding: 0 2rem 5.5rem;
+  padding: 0 2rem 6rem;
 }
 
 /* ---------- Header ---------- */
 header.top {
-  background: var(--bg);
+  border-bottom: 1px solid var(--line);
+  background: var(--card);
+  box-shadow: var(--shadow);
   position: sticky;
   top: 0;
   z-index: 100;
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
 }
 
 header.top .bar {
@@ -108,7 +109,6 @@ header.top .bar {
   font-size: 1.05rem;
   letter-spacing: -0.015em;
   color: var(--fg);
-  text-decoration: none;
 }
 .brand span {
   color: var(--acc);
@@ -116,7 +116,7 @@ header.top .bar {
 
 nav.main {
   display: flex;
-  gap: 0.2rem;
+  gap: 0.3rem;
   align-items: center;
 }
 
@@ -135,31 +135,38 @@ nav.main > .dd {
 nav.main > a:hover,
 nav.main > .dd:hover {
   color: var(--acc);
-  text-decoration: none;
+  background: var(--acc-bg);
 }
 
 /* Dropdown */
 .dd {
   position: relative;
   cursor: pointer;
+  user-select: none;
 }
 .dd::after {
-  content: " ▾";
-  font-size: 0.7em;
-  opacity: 0.55;
+  content: " \25BE";
+  font-size: 0.65em;
+  opacity: 0.45;
+  transition: opacity 0.2s ease;
+}
+.dd.open::after {
+  opacity: 0.85;
 }
 .dd-menu {
   display: none;
   position: absolute;
   top: calc(100% + 0.4rem);
   left: 0;
-  background: var(--bg2);
-  border-radius: 10px;
+  background: var(--card);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
   padding: 0.4rem 0;
   min-width: 16rem;
   max-height: 70vh;
   overflow-y: auto;
   z-index: 200;
+  box-shadow: var(--shadow-lg);
 }
 .dd-menu a {
   display: block;
@@ -167,15 +174,10 @@ nav.main > .dd:hover {
   font-family: var(--sans);
   font-size: 0.86rem;
   color: var(--fg2);
-  text-decoration: none;
-  transition: color 0.15s ease;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
 }
 .dd-menu a:hover {
   color: var(--acc);
-  text-decoration: none;
+  background: var(--acc-bg);
 }
 .dd.open .dd-menu {
   display: block;
@@ -199,18 +201,18 @@ nav.main > .dd:hover {
   align-items: center;
 }
 .controls button {
-  background: transparent;
+  background: var(--bg2);
   border: 1px solid var(--line);
   color: var(--mut);
   border-radius: var(--radius-sm);
   padding: 0;
   min-width: 44px;
   min-height: 44px;
-  font-size: 0.92rem;
+  font-size: 0.88rem;
   font-family: var(--sans);
   font-weight: 500;
   cursor: pointer;
-  transition: border-color 0.2s ease, color 0.2s ease, background 0.2s ease;
+  transition: all 0.2s ease;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -218,6 +220,7 @@ nav.main > .dd:hover {
 .controls button:hover {
   border-color: var(--acc);
   color: var(--acc);
+  background: var(--acc-bg);
 }
 .controls button:active {
   transform: scale(0.96);
@@ -239,10 +242,12 @@ nav.main > .dd:hover {
 
 /* ---------- Verse of the Day ---------- */
 #daily {
-  padding: 2.75rem 3rem;
+  padding: 3rem 3.5rem;
   margin-bottom: 3.5rem;
-  background: var(--bg2);
-  border-radius: 14px;
+  background: var(--card);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+  border: 1px solid var(--line);
 }
 
 #daily h2#daily-title {
@@ -275,21 +280,8 @@ nav.main > .dd:hover {
     animation: none;
     opacity: 1;
   }
-  .controls button {
-    transition: none;
-  }
-  .books a:hover {
-    transform: none;
-  }
+  .controls button,
   a {
-    transition: none;
-  }
-  .chap-bar a,
-  .chaps li a,
-  #results a,
-  nav.pn a,
-  form.search input,
-  form.search button {
     transition: none;
   }
 }
@@ -314,7 +306,7 @@ nav.main > .dd:hover {
 }
 #daily-link:hover {
   text-decoration: none;
-  color: var(--acc2);
+  color: var(--acc-hover);
 }
 
 .daily-meta {
@@ -330,10 +322,12 @@ nav.main > .dd:hover {
   flex-wrap: wrap;
   gap: 0.9rem;
   align-items: end;
-  background: var(--bg2);
+  background: var(--card);
+  border: 1px solid var(--line);
   border-radius: var(--radius);
   padding: 1rem 1.25rem;
   margin-bottom: 1.75rem;
+  box-shadow: var(--shadow);
 }
 .pair-picker label {
   display: flex;
@@ -355,6 +349,7 @@ nav.main > .dd:hover {
   padding: 0.5rem 0.7rem;
   cursor: pointer;
   outline: none;
+  transition: border-color 0.2s ease;
 }
 .pair-picker select:focus {
   border-color: var(--acc);
@@ -362,13 +357,15 @@ nav.main > .dd:hover {
 
 /* ---------- Translation copyrights (home) ---------- */
 .license {
-  background: var(--bg2);
+  background: var(--card);
+  border: 1px solid var(--line);
   border-radius: var(--radius);
   padding: 1.5rem 1.75rem;
   margin-top: 2.5rem;
   font-family: var(--sans);
-  font-size: 0.82rem;
+  font-size: 0.83rem;
   color: var(--fg2);
+  box-shadow: var(--shadow);
 }
 .license h2 {
   font-family: var(--sans);
@@ -390,57 +387,6 @@ nav.main > .dd:hover {
   line-height: 1.7;
 }
 
-/* ---------- Book grid (home) ---------- */
-.books {
-  display: grid;
-  grid-template-columns: repeat(2, 1fr);
-  gap: 1.5rem;
-  margin-bottom: 2.5rem;
-}
-.books h2 {
-  font-family: var(--sans);
-  font-size: 1.1rem;
-  font-weight: 600;
-  color: var(--fg);
-  margin: 0 0 1rem;
-  letter-spacing: -0.01em;
-}
-.books ul {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 0.4rem 0.6rem;
-  list-style: none;
-  margin: 0;
-  padding: 0;
-}
-.books a {
-  font-family: var(--sans);
-  font-size: 1.05rem;
-  font-weight: 500;
-  color: var(--fg);
-  text-decoration: none;
-  padding: 0.3rem 0;
-  display: block;
-  transition: transform 0.2s ease, color 0.2s ease;
-  line-height: 1.3;
-}
-.books a:hover {
-  color: var(--acc);
-  transform: scale(1.03);
-}
-
-@media (max-width: 720px) {
-  .books ul {
-    grid-template-columns: repeat(2, 1fr);
-  }
-}
-
-@media (max-width: 480px) {
-  .books ul {
-    grid-template-columns: 1fr;
-  }
-}
-
 /* ---------- Chapter index (list) ---------- */
 .chaps {
   list-style: none;
@@ -460,12 +406,11 @@ nav.main > .dd:hover {
 }
 .chaps li a:hover {
   color: var(--acc);
-  text-decoration: none;
   background: var(--bg2);
 }
 .chaps li a.active {
   color: var(--acc);
-  background: var(--bg2);
+  background: var(--acc-bg);
 }
 
 /* ---------- Chapter content ---------- */
@@ -505,7 +450,7 @@ h2.sec {
 p.reading {
   text-indent: 0;
   margin: 0;
-  line-height: 1.95;
+  line-height: 1.9;
   text-align: justify;
   text-justify: inter-word;
   hyphens: auto;
@@ -519,13 +464,13 @@ p.reading.vi {
 
 p.reading.en {
   color: var(--fg2);
-  font-size: 0.94em;
-  line-height: 1.85;
+  font-size: 0.93em;
+  line-height: 1.8;
   background: var(--bg2);
-  padding: 0.6rem 1.15rem;
-  margin: 0.25em 0 0;
+  padding: 0.55rem 1.1rem;
+  margin: 0.2em 0 0;
   border-radius: 8px;
-  text-align: left;
+  border-left: 2px solid var(--acc);
   opacity: 0.92;
 }
 
@@ -596,7 +541,7 @@ p.reading sup[id]:hover {
   font-family: var(--sans);
   font-size: 0.85rem;
   font-weight: 600;
-  color: var(--fg2);
+  color: var(--mut);
   text-decoration: none;
   padding: 0.4rem 0.8rem;
   border-radius: 6px;
@@ -606,11 +551,11 @@ p.reading sup[id]:hover {
 .chap-bar a:hover {
   color: var(--acc);
   background: var(--bg2);
-  text-decoration: none;
 }
 .chap-bar a.active {
   color: var(--acc);
-  background: var(--bg2);
+  background: var(--acc-bg);
+  border: 1px solid var(--acc);
 }
 
 /* ---------- Prev / Next ---------- */
@@ -619,9 +564,10 @@ nav.pn {
   justify-content: space-between;
   gap: 1.25rem;
   margin: 4rem 0 0;
-  padding-top: 1.75rem;
+  padding: 1.75rem 0 0;
   font-family: var(--sans);
   font-size: 0.88rem;
+  border-top: 1px solid var(--line);
 }
 
 nav.pn a {
@@ -639,6 +585,7 @@ nav.pn a {
 nav.pn a:hover {
   border-color: var(--acc);
   color: var(--acc);
+  background: var(--acc-bg);
 }
 nav.pn span.empty {
   visibility: hidden;
@@ -665,7 +612,7 @@ form.search input {
 }
 form.search input:focus {
   border-color: var(--acc);
-  box-shadow: 0 0 0 3px rgba(193, 167, 158, 0.15);
+  box-shadow: 0 0 0 3px var(--acc-bg);
 }
 
 form.search button {
@@ -719,7 +666,6 @@ form.search button:active {
 #results a:hover {
   color: var(--acc);
   background: var(--bg2);
-  text-decoration: none;
 }
 
 /* ---------- Footer ---------- */
@@ -748,9 +694,6 @@ footer .credit:hover {
   color: var(--acc);
 }
 
-/* ---------- Favicon ---------- */
-/* Referenced via <link> in page.html */
-
 /* ---------- Print ---------- */
 @media print {
   header.top,
@@ -774,10 +717,13 @@ footer .credit:hover {
   }
   #daily {
     background: none;
+    box-shadow: none;
     padding: 0;
+    border: none;
   }
   p.reading.en {
     background: none;
+    border: none;
     padding: 0;
   }
   p.reading sup {
@@ -796,7 +742,6 @@ footer .credit:hover {
   }
   #daily {
     padding: 1.75rem 1.5rem;
-    border-radius: 14px;
   }
   .chapter-meta h1 {
     font-size: 1.65rem;
@@ -813,24 +758,18 @@ footer .credit:hover {
   :root {
     --fs: 18px;
   }
-  .wrap {
-    padding: 0 1rem 3.5rem;
-  }
   .pair-picker {
     flex-direction: column;
     align-items: stretch;
   }
   #daily {
     padding: 1.5rem 1.25rem;
+    margin-bottom: 2rem;
   }
   form.search {
     flex-direction: column;
   }
   form.search button {
     width: 100%;
-  }
-  .controls button {
-    min-width: 44px;
-    min-height: 44px;
   }
 }

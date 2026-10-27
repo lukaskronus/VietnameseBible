@@ -146,23 +146,6 @@ def main():
             "xin tôn trọng điều khoản sử dụng của từng bản dịch.</p>\n"
             "</section>" % items)
 
-    def book_grid():
-        """All 66 books split into OT and NT, as plain text links."""
-        ot_books = [b for b in books if b["testament"] == "OT"]
-        nt_books = [b for b in books if b["testament"] != "OT"]
-
-        def section(title, blist):
-            items = "".join(
-                "<li><a href=\"%s/%s/\">%s</a></li>"
-                % (bp, b["slug"], esc(btitle(b)))
-                for b in sorted(blist, key=lambda b: b["position"]))
-            return (
-                "<div class=\"books\">\n"
-                "<h2>%s</h2>\n"
-                "<ul>%s</ul>\n"
-                "</div>" % (esc(title), items))
-        return section("Cựu Ước", ot_books) + section("Tân Ước", nt_books)
-
     bp = "/" + args.base_path.strip("/")
     if bp == "/":
         bp = ""
@@ -219,8 +202,18 @@ def main():
     write(os.path.join(out, "assets", "app.js"), minify_js(APP_JS_SRC))
     write(os.path.join(out, "assets", "search.js"), minify_js(SEARCH_JS_SRC))
     write(os.path.join(out, "assets", "daily.js"), minify_js(DAILY_JS_SRC))
-    write(os.path.join(out, "assets", "book.js"), minify_js(BOOK_JS_SRC))
-    write(os.path.join(out, "assets", "pair.js"), minify_js(PAIR_JS_SRC))
+    book_js_src = BOOK_JS_SRC
+    book_js_src = book_js_src.replace('vi: "vi1925", en: "ennasb"',
+                                      'vi: "%s", en: "%s"' % (default_vi, default_en))
+    write(os.path.join(out, "assets", "book.js"),
+          minify_js(book_js_src))
+    pair_js_src = PAIR_JS_SRC
+    pair_js_src = pair_js_src.replace('var DEF_VI = "vi1925";',
+                                      'var DEF_VI = "%s";' % default_vi)
+    pair_js_src = pair_js_src.replace('var DEF_EN = "ennasb";',
+                                      'var DEF_EN = "%s";' % default_en)
+    write(os.path.join(out, "assets", "pair.js"),
+          minify_js(pair_js_src))
     # Favicon (SVG at root, referenced by <link> in template)
     favicon_src = (STATIC_DIR / "favicon.svg").read_text("utf-8")
     write(os.path.join(out, "favicon.svg"), favicon_src)
@@ -382,7 +375,6 @@ def main():
             "<noscript><p><a href=\"%s/%s/1/\">"
             "%s 1</a></p></noscript></section>\n"
             % (bp, first_book["slug"], esc(btitle(first_book)))
-            + book_grid()
             + license_section())
     write(os.path.join(out, "index.html"),
           page(bp, SITE_NAME, SITE_NAME,

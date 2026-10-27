@@ -86,14 +86,23 @@ def clean(text):
     return WS_RE.sub(" ", text or "").strip()
 
 
-def strip_word_markup(text):
-    text = re.sub(r'<w[^>]*>', '', text)
-    text = re.sub(r'</w>', '', text)
-    text = re.sub(r'<[^>]+>', '', text)
-    return text
+# Elements whose text/interaction is not verse text -- skipped entirely.
+SKIP_TAGS = frozenset({
+    'id', 'h', 'toc', 'ide', 's', 'b', 'd', 'languageCode', 'it',
+    'f', 'fr', 'ft', 'fe', 'note', 'x',
+})
 
 
 def parse_usfx_file(path, warnings, code):
+    """Parse a USFX file via recursive document-order walk.
+
+    USFX marks verses with self-closing <v> elements; verse text lives
+    in sibling elements after <v> (e.g. <w> word tags in engbsb, or
+    raw text in vie1934), up to the next <v> or <ve>.  A flat
+    book.iter() loses sibling relationships, so we walk the tree
+    manually, tracking the current chapter/verse and accumulating
+    every text node into the active verse.
+    """
     verses = {}
     try:
         tree = ET.parse(path)
@@ -113,45 +122,53 @@ def parse_usfx_file(path, warnings, code):
         except ValueError:
             continue
 
-        current_ch = None
-        for elem in book.iter():
-            if elem.tag == 'c':
-                try:
-                    current_ch = int(elem.get('id'))
-                except (TypeError, ValueError):
-                    current_ch = None
-                continue
-            if elem.tag == 'v' and current_ch is not None:
-                try:
-                    vn = int(elem.get('id'))
-                except (TypeError, ValueError):
-                    continue
+        state = {'ch': None, 'vn': None, 'buf': []}
 
-                text_parts = []
-                if elem.text:
-                    text_parts.append(elem.text)
-                for child in elem:
-                    if child.tag == 'w' and code == 'engbsb':
-                        if child.text:
-                            text_parts.append(child.text)
-                    elif child.tag not in ['ve', 'note', 'f', 'fe']:
-                        if child.text:
-                            text_parts.append(child.text)
-                    if child.tail:
-                        text_parts.append(child.tail)
-                if elem.tail:
-                    text_parts.append(elem.tail)
-
-                full_text = ''.join(text_parts)
-                if code == 'engbsb':
-                    full_text = strip_word_markup(full_text)
-                full_text = clean(full_text)
-
-                slot = verses.setdefault((bn, current_ch), {})
-                if vn in slot:
+        def flush():
+            if state['ch'] is not None and state['vn'] is not None:
+                text = clean(''.join(state['buf']))
+                slot = verses.setdefault((bn, state['ch']), {})
+                if state['vn'] in slot:
                     warnings.append("%s: book %d ch %d duplicate verse %d"
-                                    % (os.path.basename(path), bn, current_ch, vn))
-                slot[vn] = full_text
+                                    % (os.path.basename(path), bn,
+                                       state['ch'], state['vn']))
+                slot[state['vn']] = text
+            state['buf'] = []
+            state['vn'] = None
+
+        def walk(elem):
+            tag = elem.tag
+            if tag == 'c':
+                flush()
+                try:
+                    state['ch'] = int(elem.get('id'))
+                except (TypeError, ValueError):
+                    state['ch'] = None
+                return
+            if tag == 'v':
+                flush()
+                try:
+                    state['vn'] = int(elem.get('id'))
+                except (TypeError, ValueError):
+                    state['vn'] = None
+                if elem.text:
+                    state['buf'].append(elem.text)
+                return
+            if tag == 've':
+                flush()
+                return
+            if tag in SKIP_TAGS:
+                return  # skip footnotes, headings, metadata -- recurse no further
+
+            if elem.text:
+                state['buf'].append(elem.text)
+            for child in elem:
+                walk(child)
+                if child.tail:
+                    state['buf'].append(child.tail)
+
+        walk(book)
+        flush()
 
     return verses
 
