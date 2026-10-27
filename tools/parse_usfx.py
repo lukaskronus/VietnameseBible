@@ -54,6 +54,12 @@ from parse_bible import VI_TITLES, EN_TITLES, TESTAMENT_LABELS
 
 WS_RE = re.compile(r"\s+")
 
+# Elements whose text/interaction is not verse text -- skipped entirely.
+SKIP_TAGS = frozenset({
+    'id', 'h', 'toc', 'ide', 's', 'b', 'd', 'languageCode', 'it',
+    'f', 'fr', 'ft', 'fe', 'note', 'x',
+})
+
 USFX_TO_OSIS = {
     "GEN": "Gen", "EXO": "Exod", "LEV": "Lev", "NUM": "Num", "DEU": "Deut",
     "JOS": "Josh", "JDG": "Judg", "RUT": "Ruth", "1SA": "1Sam", "2SA": "2Sam",
@@ -86,13 +92,6 @@ def slugify(text):
 
 def clean(text):
     return WS_RE.sub(" ", text or "").strip()
-
-
-# Elements whose text/interaction is not verse text -- skipped entirely.
-SKIP_TAGS = frozenset({
-    'id', 'h', 'toc', 'ide', 's', 'b', 'd', 'languageCode', 'it',
-    'f', 'fr', 'ft', 'fe', 'note', 'x',
-})
 
 
 def parse_usfx_file(path, warnings, code):
