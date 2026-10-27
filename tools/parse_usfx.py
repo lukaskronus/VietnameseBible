@@ -34,8 +34,6 @@ from datetime import datetime, timezone
 
 LEGACY_CHAPTER_COUNT = 1189
 
-TESTAMENT_LABELS = {"OT": "Cuu Uoc", "NT": "Tan Uoc"}
-
 DEFAULT_VI = "vie1934"
 DEFAULT_EN = "engbsb"
 
@@ -49,6 +47,10 @@ OSIS = ("Gen Exod Lev Num Deut Josh Judg Ruth 1Sam 2Sam 1Kgs 2Kgs 1Chr "
         "Joel Amos Obad Jonah Mic Nah Hab Zeph Hag Zech Mal Matt Mark Luke "
         "John Acts Rom 1Cor 2Cor Gal Eph Phil Col 1Thess 2Thess 1Tim 2Tim "
         "Titus Phlm Heb Jas 1Pet 2Pet 1John 2John 3John Jude Rev").split()
+
+# Book titles live only in parse_bible.py (AGENTS.md).  Import them so the
+# web_version parser uses the same canonical names as the portable-site parser.
+from parse_bible import VI_TITLES, EN_TITLES, TESTAMENT_LABELS
 
 WS_RE = re.compile(r"\s+")
 
@@ -231,34 +233,10 @@ def main():
     missing_cells = 0
     seen_slugs = {}
 
-    book_names = {}
-    for code in TRANSLATIONS:
-        dir_name = TRANSLATIONS[code][0]
-        meta_path = os.path.join(args.data, dir_name, f"{code}metadata.xml")
-        if os.path.isfile(meta_path):
-            try:
-                tree = ET.parse(meta_path)
-                root = tree.getroot()
-                for book_elem in root.findall('.//book'):
-                    bcode = book_elem.get('code')
-                    long_name = book_elem.find('long')
-                    if long_name is not None and long_name.text and bcode:
-                        if code not in book_names:
-                            book_names[code] = {}
-                        book_names[code][bcode] = long_name.text
-            except Exception:
-                pass
-
-    vi_book_names = book_names.get('vie1934', {})
-    en_book_names = book_names.get('engbsb', {})
-
     for pos in range(1, 67):
         osis = OSIS[pos - 1]
-        osis_to_usfx = {v: k for k, v in USFX_TO_OSIS.items()}
-        usfx_code = osis_to_usfx.get(osis)
-
-        title_vi = vi_book_names.get(usfx_code, osis) if usfx_code else osis
-        title_en = en_book_names.get(usfx_code, osis) if usfx_code else osis
+        title_vi = VI_TITLES[pos - 1]
+        title_en = EN_TITLES[pos - 1]
 
         slug = slugify(title_vi)
         if slug in seen_slugs:
