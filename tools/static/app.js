@@ -76,7 +76,9 @@ var themeBtn = ktGet("theme-btn");
 function ktUpdateThemeBtn() {
   if (!themeBtn) return;
   var dark = document.documentElement.dataset.theme === "dark";
-  themeBtn.textContent = dark ? "☀" : "☾";
+  themeBtn.innerHTML = dark
+    ? '<svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="4.5"/><path d="M12 2.5v2.5M12 19v2.5M2.5 12h5M16.5 12h5M5 5l1.8 1.8M17.2 17.2L19 19M19 5l-1.8 1.8M6.8 17.2L5 19"/></svg>'
+    : '<svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 13.5A8 8 0 1 1 10.5 4a6.5 6.5 0 0 0 9.5 9.5z"/></svg>';
   themeBtn.setAttribute("aria-pressed", dark);
   themeBtn.title = dark ? "Chuyển sang nền sáng" : "Chuyển sang nền tối";
   var meta = document.querySelector('meta[name="theme-color"]');
