@@ -9,15 +9,15 @@ Two datasets feed the same build chain, and they never mix:
 |---|---|---|
 | Workflow | `.github/workflows/build.yml` | `.github/workflows/deploy.yml` |
 | Trigger | `workflow_dispatch` only | push to `master` on `data/**`, `tools/**`, itself |
-| Data | `data/xml/*.xml` (6 files, licensed) | `data/web_version/*/` USFX (public domain) |
-| Phase 1 | `tools/parse_bible.py` | `tools/parse_usfx.py` |
+| Data | `data/xml/*.xml` (6 files, licensed) | `data/web_version/*.xml` (4 flat files, public domain, mixed formats: OSIS + USFX + Zefania) |
+| Phase 1 | `tools/parse_bible.py` | `tools/parse_web.py` |
 | Output | `site` + `site.zip` artifacts, 30-day retention | published to Wasmer Edge |
 
 **The licensed set never leaves this repo.** `data/xml/` builds artifacts for
 manual download; whoever takes them hosts them and carries the licensing risk.
 Wasmer is only ever built from `data/web_version/`, which holds public-domain
-editions (`vie1934`, `engbsb` today). Adding an edition there is a licensing
-decision, made by the owner before any code change.
+editions (`vie1934`, `engbsb`, `engweb`, `engasv` today). Adding an edition
+there is a licensing decision, made by the owner before any code change.
 
 ## Build and verify
 
@@ -28,7 +28,7 @@ Phases 2 and 3 are shared; only Phase 1 differs:
 python tools/parse_bible.py --data data --out build
 
 # public web version (public domain)
-python tools/parse_usfx.py --data data/web_version --out build
+python tools/parse_web.py --data data/web_version --out build
 
 # shared
 python tools/build_db.py --json build/bible.json --out build
@@ -41,8 +41,13 @@ machines are code storage, so do not run the pipeline locally. There is no test
 suite, linter, or formatter; CI is the verification.
 
 `parse_bible.py --data` accepts `data/` or `data/xml/` (it resolves `xml/`
-itself). `parse_usfx.py` imports `VI_TITLES`/`EN_TITLES`/`TESTAMENT_LABELS` from
-`parse_bible.py`, so book names and slugs are shared by both pipelines.
+itself). `parse_web.py` imports `VI_TITLES`/`EN_TITLES`/`TESTAMENT_LABELS` from
+`parse_bible.py`, so book names and slugs are shared by both pipelines. It
+parses three source formats: USFX (document-order walk over `<v>` markers),
+OSIS (`div`/`chapter`/`verse` via `osisID` suffixes) and Zefania
+(`BIBLEBOOK`/`CHAPTER`/`VERS` via number attributes); the format per edition
+is declared in `TRANSLATIONS` inside it. `eng-web` ships a front matter, a
+glossary and Apocrypha books that are skipped silently (`USFX_IGNORE`).
 
 `build/` is gitignored; `site/` and `site.zip` are build output and are never
 committed.
@@ -94,7 +99,7 @@ weekly and on manual dispatch.
   build-time string substitution for this.
 - **Translation counts are computed, never written out.** The home masthead and
   the licence list derive their numbers from `meta.translations`; the web
-  version currently has two editions, not six.
+  version currently has four editions, not six.
 
 ## Static site internals
 

@@ -1,5 +1,5 @@
 # Phase 4: deploy public domain Bible site (web_version) to Wasmer Edge.
-# Builds from data/web_version (USFX, public domain) and deploys.
+# Builds from data/web_version (OSIS + USFX + Zefania, public domain) and deploys.
 # Runs on push to data/tools and manually from master.
 name: deploy
 
@@ -40,8 +40,8 @@ jobs:
         with:
           python-version: "3.12"
 
-      - name: Parse USFX sources (public domain)
-        run: python tools/parse_usfx.py --data data/web_version --out build
+      - name: Parse web_version sources (public domain)
+        run: python tools/parse_web.py --data data/web_version --out build
 
       - name: Build SQLite + search index
         run: python tools/build_db.py --json build/bible.json --out build

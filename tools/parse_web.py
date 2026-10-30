@@ -1,13 +1,16 @@
 ﻿#!/usr/bin/env python3
-"""Parse USFX Bible sources in data/web_version/ into structured JSON.
+"""Parse public-domain Bible sources in data/web_version/ into structured JSON.
 
-Phase 1 for public domain web version (Wasmer). Stdlib only.
+Phase 1 for the Wasmer web version. Stdlib only.
 
-    python tools/parse_usfx.py --data data/web_version --out build
+    python tools/parse_web.py --data data/web_version --out build
 
-Reads USFX format from:
-    data/web_version/engbsb_usfx/engbsb_usfx.xml (Berean Standard Bible, English)
-    data/web_version/vie1934_usfx/vie1934_usfx.xml (Vietnamese 1934)
+Inputs are flat files in data/web_version/, one format each:
+
+    vie-cadman.osis.xml   OSIS 2.1.1   Vietnamese 1934     (vie1934)
+    eng-bsb.usfx.xml      USFX         Berean Standard Bible (engbsb)
+    eng-web.usfx.xml      USFX         World English Bible   (engweb)
+    eng-asv.zefania.xml   Zefania XML  American Standard Version (engasv)
 
 Outputs same format as parse_bible.py:
     bible.json              structured books -> chapters -> blocks
@@ -38,8 +41,15 @@ DEFAULT_VI = "vie1934"
 DEFAULT_EN = "engbsb"
 
 TRANSLATIONS = {
-    "vie1934": ("vie1934_usfx", "Kinh Thanh 1934", "vi"),
-    "engbsb": ("engbsb_usfx", "Berean Standard Bible", "en"),
+    # code: (filename, short UI label, language, parser format, copyright line)
+    "vie1934": ("vie-cadman.osis.xml", "Kinh Thanh 1934", "vi", "osis",
+                "Vietnamese Bible (1934) is in the Public Domain."),
+    "engbsb": ("eng-bsb.usfx.xml", "Berean Standard Bible", "en", "usfx",
+               "Berean Standard Bible is in the Public Domain."),
+    "engweb": ("eng-web.usfx.xml", "World English Bible", "en", "usfx",
+               "World English Bible is in the Public Domain."),
+    "engasv": ("eng-asv.zefania.xml", "American Standard Version", "en", "zefania",
+               "American Standard Version (1901) is in the Public Domain."),
 }
 
 OSIS = ("Gen Exod Lev Num Deut Josh Judg Ruth 1Sam 2Sam 1Kgs 2Kgs 1Chr "
@@ -56,8 +66,15 @@ WS_RE = re.compile(r"\s+")
 
 # Elements whose text/interaction is not verse text -- skipped entirely.
 SKIP_TAGS = frozenset({
-    'id', 'h', 'toc', 'ide', 's', 'b', 'd', 'languageCode', 'it',
+    'id', 'h', 'toc', 'ide', 's', 'b', 'languageCode', 'it',
     'f', 'fr', 'ft', 'fe', 'note', 'x',
+})
+
+# WEB ships front/back matter and apocrypha outside the 66-book canon;
+# skip them silently (they are intentional, not parsing errors).
+USFX_IGNORE = frozenset({
+    "FRT", "GLO", "TOB", "JDT", "ESG", "WIS", "SIR", "BAR", "LJE", "S3Y",
+    "SUS", "BEL", "1MA", "2MA", "1ES", "MAN", "PS2", "3MA", "2ES", "4MA",
 })
 
 USFX_TO_OSIS = {
@@ -77,6 +94,9 @@ USFX_TO_OSIS = {
     "REV": "Rev",
 }
 
+# OSIS 2.1.1 core namespace (vie-cadman.osis.xml is namespaced).
+OSIS_NS = "{http://www.bibletechnologies.net/2003/OSIS/namespace}"
+
 
 def slugify(text):
     norm = unicodedata.normalize("NFD", text)
@@ -94,7 +114,7 @@ def clean(text):
     return WS_RE.sub(" ", text or "").strip()
 
 
-def parse_usfx_file(path, warnings, code):
+def parse_usfx_file(path, warnings):
     """Parse a USFX file via recursive document-order walk.
 
     USFX marks verses with self-closing <v> elements; verse text lives
@@ -114,14 +134,13 @@ def parse_usfx_file(path, warnings, code):
 
     for book in root.findall('book'):
         usfx_id = book.get('id')
+        if usfx_id in USFX_IGNORE:
+            continue
         if usfx_id not in USFX_TO_OSIS:
             warnings.append("%s: unknown book %s" % (os.path.basename(path), usfx_id))
             continue
         osis = USFX_TO_OSIS[usfx_id]
-        try:
-            bn = OSIS.index(osis) + 1
-        except ValueError:
-            continue
+        bn = OSIS.index(osis) + 1
 
         state = {'ch': None, 'vn': None, 'buf': []}
 
@@ -161,12 +180,16 @@ def parse_usfx_file(path, warnings, code):
             if tag in SKIP_TAGS:
                 return  # skip footnotes, headings, metadata -- recurse no further
 
-            if elem.text:
+            # 'd' (speaker-label paragraph) is NOT skipped: engbsb puts
+            # real verse text inside <d> (e.g. Zech 12:1). Text outside
+            # an open verse (<v> seen) is a label/preamble and is dropped
+            # so labels never bleed into the previous verse.
+            if elem.text and state['vn'] is not None:
                 state['buf'].append(elem.text)
             for child in elem:
                 try:
                     walk(child)
-                    if child.tail:
+                    if child.tail and state['vn'] is not None:
                         state['buf'].append(child.tail)
                 except Exception:
                     # Skip problematic child elements but continue parsing
@@ -176,6 +199,112 @@ def parse_usfx_file(path, warnings, code):
         flush()
 
     return verses
+
+
+def parse_osis_file(path, warnings):
+    """Parse an OSIS 2.1.1 file (namespaced): div/chapter/verse tree.
+
+    Structure: <div osisID='Gen' type='book'> -> <chapter osisID='Gen.1'>
+    -> <verse osisID='Gen.1.1'>text</verse>.  Book position comes from
+    the canon OSIS tuple; chapter/verse numbers from the osisID suffixes.
+    """
+    verses = {}
+    try:
+        tree = ET.parse(path)
+    except ET.ParseError as e:
+        warnings.append("%s: XML parse error: %s" % (os.path.basename(path), e))
+        return {}
+    root = tree.getroot()
+
+    for div in root.iter(OSIS_NS + 'div'):
+        if div.get('type') != 'book':
+            continue
+        book_id = div.get('osisID')
+        if book_id not in OSIS:
+            warnings.append("%s: unknown book %s" % (os.path.basename(path), book_id))
+            continue
+        bn = OSIS.index(book_id) + 1
+
+        for chapter in div.findall(OSIS_NS + 'chapter'):
+            try:
+                ch = int(chapter.get('osisID', '').rsplit('.', 1)[-1])
+            except ValueError:
+                warnings.append("%s: bad chapter osisID %r"
+                                % (os.path.basename(path), chapter.get('osisID')))
+                continue
+            slot = verses.setdefault((bn, ch), {})
+            for verse in chapter.iter(OSIS_NS + 'verse'):
+                try:
+                    vn = int(verse.get('osisID', '').rsplit('.', 1)[-1])
+                except ValueError:
+                    warnings.append("%s: bad verse osisID %r (book %d ch %d)"
+                                    % (os.path.basename(path), verse.get('osisID'),
+                                       bn, ch))
+                    continue
+                text = clean(''.join(verse.itertext()))
+                if vn in slot:
+                    warnings.append("%s: book %d ch %d duplicate verse %d"
+                                    % (os.path.basename(path), bn, ch, vn))
+                slot[vn] = text
+
+    return verses
+
+
+def parse_zefania_file(path, warnings):
+    """Parse a Zefania XML file: BIBLEBOOK bnumber / CHAPTER cnumber / VERS vnumber.
+
+    bnumber 1..66 is the canon position, matching the OSIS tuple order.
+    """
+    verses = {}
+    try:
+        tree = ET.parse(path)
+    except ET.ParseError as e:
+        warnings.append("%s: XML parse error: %s" % (os.path.basename(path), e))
+        return {}
+    root = tree.getroot()
+
+    for book in root.iter('BIBLEBOOK'):
+        try:
+            bn = int(book.get('bnumber'))
+        except (TypeError, ValueError):
+            warnings.append("%s: missing bnumber at %s"
+                            % (os.path.basename(path), book.get('bname')))
+            continue
+        if not 1 <= bn <= 66:
+            warnings.append("%s: book %d out of canon (skipped)"
+                            % (os.path.basename(path), bn))
+            continue
+
+        for chapter in book.findall('CHAPTER'):
+            try:
+                ch = int(chapter.get('cnumber'))
+            except (TypeError, ValueError):
+                warnings.append("%s: book %d bad cnumber %r"
+                                % (os.path.basename(path), bn, chapter.get('cnumber')))
+                continue
+            slot = verses.setdefault((bn, ch), {})
+            for verse in chapter.findall('VERS'):
+                try:
+                    vn = int(verse.get('vnumber'))
+                except (TypeError, ValueError):
+                    warnings.append("%s: book %d ch %d bad vnumber %r"
+                                    % (os.path.basename(path), bn, ch,
+                                       verse.get('vnumber')))
+                    continue
+                text = clean(''.join(verse.itertext()))
+                if vn in slot:
+                    warnings.append("%s: book %d ch %d duplicate verse %d"
+                                    % (os.path.basename(path), bn, ch, vn))
+                slot[vn] = text
+
+    return verses
+
+
+PARSERS = {
+    "usfx": parse_usfx_file,
+    "osis": parse_osis_file,
+    "zefania": parse_zefania_file,
+}
 
 
 def main():
@@ -194,29 +323,16 @@ def main():
     per_tr = {}
     tr_meta = {}
 
-    for code, (dir_name, label, lang) in TRANSLATIONS.items():
-        xml_path = os.path.join(args.data, dir_name, f"{code}_usfx.xml")
+    for code, (fname, label, lang, fmt, copyright_) in TRANSLATIONS.items():
+        xml_path = os.path.join(args.data, fname)
         if not os.path.isfile(xml_path):
             errors.append("source not found: %s" % xml_path)
             continue
 
-        copyright = label
-        vernacular_path = os.path.join(args.data, dir_name,
-                                       f"{code}-VernacularAdditional.xml")
-        if os.path.isfile(vernacular_path):
-            try:
-                tree = ET.parse(vernacular_path)
-                root = tree.getroot()
-                cp = root.find('copyright')
-                if cp is not None and cp.text:
-                    copyright = clean(cp.text)
-            except Exception:
-                pass
-
-        verses = parse_usfx_file(xml_path, warnings, code)
+        verses = PARSERS[fmt](xml_path, warnings)
         per_tr[code] = verses
-        tr_meta[code] = {"file": os.path.basename(xml_path), "label": label,
-                         "lang": lang, "copyright": copyright}
+        tr_meta[code] = {"file": fname, "label": label,
+                         "lang": lang, "copyright": copyright_}
 
     if errors:
         for e in errors:
@@ -225,6 +341,16 @@ def main():
 
     counts = {c: sum(len(v) for v in verses.values())
               for c, verses in per_tr.items()}
+
+    # A source file that fails to parse (truncated download) returns {} --
+    # hard-fail instead of publishing a site with blank verses for one edition.
+    for code, n in counts.items():
+        if not n:
+            errors.append("%s: parsed 0 verses" % code)
+    if errors:
+        for e in errors:
+            print("error: %s" % e, file=sys.stderr)
+        return 1
 
     all_chapters = set()
     for verses in per_tr.values():
@@ -304,7 +430,7 @@ def main():
     payload = {
         "meta": {
             "generated_utc": datetime.now(timezone.utc).isoformat(),
-            "generator": "tools/parse_usfx.py (phase 1, usfx)",
+            "generator": "tools/parse_web.py (phase 1, web_version)",
             "books": len(books),
             "total_chapters": n_chapters,
             "total_verses": total_verses,
@@ -324,7 +450,7 @@ def main():
 
     rep_path = os.path.join(args.out, "validation_report.md")
     with open(rep_path, "w", encoding="utf-8") as f:
-        f.write("# Validation report (Phase 1 parser, usfx)\n\n")
+        f.write("# Validation report (Phase 1 parser, web_version)\n\n")
         f.write("Generated: %s UTC\n\n"
                 % datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M"))
         f.write("## Summary\n\n")
@@ -338,7 +464,8 @@ def main():
                 % (len(warnings), len(errors)))
         f.write("Default pair: %s + %s (public domain).\n\n"
                 % (DEFAULT_VI, DEFAULT_EN))
-        f.write("Sources: `data/web_version/` (USFX format).\n\n")
+        f.write("Sources: `data/web_version/` (OSIS / USFX / Zefania, "
+                "public domain).\n\n")
         if warnings:
             f.write("## Warnings\n\n")
             for w in warnings[:200]:
