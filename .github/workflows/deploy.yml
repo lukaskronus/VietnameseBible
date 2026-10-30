@@ -1,12 +1,15 @@
 # Phase 4: deploy public domain Bible site (web_version) to Wasmer Edge.
 # Builds from data/web_version (OSIS + USFX + Zefania, public domain) and deploys.
-# Runs on push to data/tools and manually from master.
+# Runs on push touching data/web_version/** or tools/**, and manually from master.
 name: deploy
 
 on:
   push:
     paths:
-      - "data/**"
+      # Public-domain sources only. data/xml (licensed) must never trigger a
+      # public-site deploy; adding a file under data/web_version is a licensing
+      # decision, so keep this filter narrow.
+      - "data/web_version/**"
       - "tools/**"
       - ".github/workflows/deploy.yml"
   workflow_dispatch:

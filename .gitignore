@@ -35,6 +35,9 @@ tsconfig.tsbuildinfo
 
 # Generated build output (produced by GitHub Actions, never committed)
 /build/
+/site/
+/site.zip
 __pycache__/
 .opencode/
 .playwright-mcp/
+.impeccable/
