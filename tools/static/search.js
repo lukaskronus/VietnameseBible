@@ -1,38 +1,10 @@
 "use strict";
 
-function fold(s) {
-  return s
-    .normalize("NFD")
-    .replace(/[\u0300-\u036f]/g, "")
-    .replace(/đ/g, "d")
-    .replace(/Đ/g, "D")
-    .replace(/ð/g, "d")
-    .replace(/Ð/g, "D")
-    .toLowerCase();
-}
-
-function toks(s) {
-  var m = s.match(/[a-z0-9]+/g) || [];
-  return m.filter(function (t) {
-    return t.length >= 2;
-  });
-}
+/* fold()/toks() live in fold.js, loaded after app.js and before this file.
+   Escaping and base-path helpers come from app.js. */
 
 var IDX = null;
 var CHS = null;
-
-function esc(s) {
-  return s
-    .replace(/&/g, "&amp;")
-    .replace(/</g, "&lt;")
-    .replace(/>/g, "&gt;")
-    .replace(/"/g, "&quot;");
-}
-
-function base() {
-  var b = document.querySelector('meta[name="kt-base"]');
-  return b ? b.content : "";
-}
 
 function run(e) {
   if (e) e.preventDefault();
@@ -72,7 +44,7 @@ function run(e) {
       return a - b;
     });
 
-  var bp = base();
+  var bp = ktBase();
 
   if (!keys.length) {
     out.innerHTML = "<p>Không tìm thấy kết quả.</p>";
@@ -87,12 +59,12 @@ function run(e) {
     var c = CHS[keys[n] - 1];
     if (c.book !== currentBook) {
       currentBook = c.book;
-      h += "<h3>" + esc(currentBook) + "</h3>";
+      h += "<h3>" + ktEsc(currentBook) + "</h3>";
     }
     var label = c.book + " " + c.n;
     if (c.book_en) label += " · " + c.book_en + " " + c.n;
     var href = bp + "/" + c.slug + "/" + c.n + "/";
-    h += '<a href="' + escAttr(href) + '">' + esc(label) + "</a>";
+    h += '<a href="' + ktEscAttr(href) + '">' + ktEsc(label) + "</a>";
   }
 
   if (keys.length > lim) {
@@ -102,19 +74,13 @@ function run(e) {
   out.innerHTML = h;
 }
 
-function escAttr(s) {
-  return s
-    .replace(/&/g, "&amp;")
-    .replace(/"/g, "&quot;");
-}
-
 document.getElementById("search-form").addEventListener("submit", run);
 
 Promise.all([
-  fetch(base() + "/data/search_index.json").then(function (r) {
+  fetch(ktBase() + "/data/search_index.json").then(function (r) {
     return r.json();
   }),
-  fetch(base() + "/data/chapters.json").then(function (r) {
+  fetch(ktBase() + "/data/chapters.json").then(function (r) {
     return r.json();
   }),
 ])

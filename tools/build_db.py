@@ -15,7 +15,6 @@ Schema:
     verses(id, chapter_id, number, text, text_en, text_norm)
       text = Vietnamese (primary), text_en = English NASB (secondary),
       text_norm = folded "vi + en" for bilingual search
-    headings(id, chapter_id, position, text)
     verses_fts                          -- FTS5 over text_norm, trigger-kept
     meta(key, value)
 
@@ -72,13 +71,6 @@ CREATE TABLE verses(
   text_norm TEXT NOT NULL
 );
 CREATE INDEX idx_verses_chapter ON verses(chapter_id);
-CREATE TABLE headings(
-  id INTEGER PRIMARY KEY,
-  chapter_id INTEGER NOT NULL REFERENCES chapters(id),
-  position INTEGER NOT NULL,
-  text TEXT NOT NULL
-);
-CREATE INDEX idx_headings_chapter ON headings(chapter_id);
 CREATE VIRTUAL TABLE verses_fts USING fts5(
   text_norm, content='verses', content_rowid='id', tokenize='unicode61'
 );
@@ -148,7 +140,7 @@ def main():
         return 1
 
     postings = {}  # token -> set of chapter ids
-    n_chapters = n_verses = n_headings = 0
+    n_chapters = n_verses = 0
     try:
         with con:
             for book in sorted(books, key=lambda b: b["position"]):
@@ -165,30 +157,28 @@ def main():
                         (book_id, ch["number"]))
                     chapter_id = cur.lastrowid
                     n_chapters += 1
-                    hpos = 0
                     for block in ch["blocks"]:
-                        if block["type"] == "verse":
-                            vi = block.get("vi", block.get("text", ""))
-                            en = block.get("en", "")
-                            norm = fold((vi or "") + "\n" + (en or ""))
-                            con.execute(
-                                "INSERT INTO verses(chapter_id, number,"
-                                " text, text_en, text_norm)"
-                                " VALUES (?,?,?,?,?)",
-                                (chapter_id, block["number"],
-                                 vi, en, norm))
-                            n_verses += 1
-                            for tok in set(tokenize(norm)):
-                                postings.setdefault(tok, set()).add(chapter_id)
-                        else:
-                            con.execute(
-                                "INSERT INTO headings(chapter_id, position,"
-                                " text) VALUES (?,?,?)",
-                                (chapter_id, hpos, block["text"]))
-                            hpos += 1
-                            n_headings += 1
-                            for tok in set(tokenize(fold(block["text"]))):
-                                postings.setdefault(tok, set()).add(chapter_id)
+                        if block["type"] != "verse":
+                            # Only verse blocks exist since the headings
+                            # plumbing was removed; fail cleanly, not with a
+                            # KeyError traceback, if a parser starts emitting
+                            # another kind.
+                            raise ValueError(
+                                "non-verse block %r in book %s chapter %d"
+                                % (block.get("type"), book["slug"],
+                                   ch["number"]))
+                        vi = block.get("vi", block.get("text", ""))
+                        en = block.get("en", "")
+                        norm = fold((vi or "") + "\n" + (en or ""))
+                        con.execute(
+                            "INSERT INTO verses(chapter_id, number,"
+                            " text, text_en, text_norm)"
+                            " VALUES (?,?,?,?,?)",
+                            (chapter_id, block["number"],
+                             vi, en, norm))
+                        n_verses += 1
+                        for tok in set(tokenize(norm)):
+                            postings.setdefault(tok, set()).add(chapter_id)
             meta_rows = [
                 ("generator", "tools/build_db.py (phase 2)"),
                 ("generated_utc",
@@ -196,14 +186,13 @@ def main():
                 ("total_books", str(len(books))),
                 ("total_chapters", str(n_chapters)),
                 ("total_verses", str(n_verses)),
-                ("total_headings", str(n_headings)),
                 ("verse_of_day_rule",
                  "((701 * days_since_unix_epoch + 123) % total_chapters) + 1"
                  "  (result is a chapters.id)"),
             ]
             con.executemany("INSERT INTO meta(key, value) VALUES (?,?)",
                             meta_rows)
-    except sqlite3.Error as e:
+    except (sqlite3.Error, ValueError) as e:
         print("error: insert failed: %s" % e, file=sys.stderr)
         return 1
 
@@ -230,8 +219,8 @@ def main():
         json.dump(index, f, separators=(",", ":"))
         f.write("\n")
 
-    print("books=%d chapters=%d verses=%d headings=%d tokens=%d"
-          % (len(books), n_chapters, n_verses, n_headings, len(postings)))
+    print("books=%d chapters=%d verses=%d tokens=%d"
+          % (len(books), n_chapters, n_verses, len(postings)))
     print("sqlite=%d bytes index=%d bytes"
           % (os.path.getsize(db_path), os.path.getsize(idx_path)))
     return 0

@@ -45,6 +45,7 @@ PAGE_TPL = Template((TEMPLATE_DIR / "page.html").read_text("utf-8"))
 CSS_SRC = (STATIC_DIR / "style.css").read_text("utf-8")
 APP_JS_SRC = (STATIC_DIR / "app.js").read_text("utf-8")
 SEARCH_JS_SRC = (STATIC_DIR / "search.js").read_text("utf-8")
+FOLD_JS_SRC = (STATIC_DIR / "fold.js").read_text("utf-8")
 DAILY_JS_SRC = (STATIC_DIR / "daily.js").read_text("utf-8")
 BOOK_JS_SRC = (STATIC_DIR / "book.js").read_text("utf-8")
 PAIR_JS_SRC = (STATIC_DIR / "pair.js").read_text("utf-8")
@@ -246,6 +247,7 @@ def main():
     write(os.path.join(out, "assets", "style.css"), minify_css(CSS_SRC))
     write(os.path.join(out, "assets", "app.js"), minify_js(APP_JS_SRC))
     write(os.path.join(out, "assets", "search.js"), minify_js(SEARCH_JS_SRC))
+    write(os.path.join(out, "assets", "fold.js"), minify_js(FOLD_JS_SRC))
     write(os.path.join(out, "assets", "daily.js"), minify_js(DAILY_JS_SRC))
     write(os.path.join(out, "assets", "book.js"), minify_js(BOOK_JS_SRC))
     write(os.path.join(out, "assets", "pair.js"), minify_js(PAIR_JS_SRC))
@@ -269,26 +271,22 @@ def main():
         """
         html_parts = []
         for b in blocks:
-            if b.get("type") == "heading":
-                h = b.get("en") or b.get("text", "")
-                html_parts.append("<h2 class=\"sec\">%s</h2>" % esc(h))
-            else:
-                vi = b.get("vi", b.get("text", ""))
-                en = b.get("en", "")
-                if vi == "" and en == "":
-                    continue
-                pair = (
-                    '<div class="verse-pair">'
-                    '<p class="reading vi">'
-                    "<sup id=\"c%dv%d\">%d</sup>%s</p>"
-                    % (ch_number, b["number"], b["number"], esc(vi)))
-                if en:
-                    pair += (
-                        '<p class="reading en" lang="en">'
-                        "<sup>%d</sup>%s</p>"
-                        % (b["number"], esc(en)))
-                pair += "</div>"
-                html_parts.append(pair)
+            vi = b.get("vi", b.get("text", ""))
+            en = b.get("en", "")
+            if vi == "" and en == "":
+                continue
+            pair = (
+                '<div class="verse-pair">'
+                '<p class="reading vi">'
+                "<sup id=\"c%dv%d\">%d</sup>%s</p>"
+                % (ch_number, b["number"], b["number"], esc(vi)))
+            if en:
+                pair += (
+                    '<p class="reading en" lang="en">'
+                    "<sup>%d</sup>%s</p>"
+                    % (b["number"], esc(en)))
+            pair += "</div>"
+            html_parts.append(pair)
         return html_parts
 
     # ---- chapter + book pages ---------------------------------------------
@@ -344,9 +342,7 @@ def main():
             for code, tr in translations.items():
                 lang = tr.get("lang")
                 tblocks = [{"t": "v", "n": b["number"],
-                            "x": (b.get("texts", {}).get(code, "")
-                                  if b.get("type") != "heading"
-                                  else (b.get("en") or b.get("text", "")))}
+                            "x": b.get("texts", {}).get(code, "")}
                            for b in ch["blocks"]]
                 write(os.path.join(out, "data", "tr", code, "ch",
                                    str(cid) + ".json"),
@@ -427,7 +423,7 @@ def main():
     write(os.path.join(out, "tim-kiem", "index.html"),
           page(bp, "Tìm kiếm | %s" % SITE_NAME,
                "Tìm kiếm Kinh Thánh", search_body,
-               ("app.js", "search.js"), nav_dd))
+               ("app.js", "fold.js", "search.js"), nav_dd))
 
     # ---- sitemap / robots / 404 -------------------------------------------
     today = datetime.now(timezone.utc).strftime("%Y-%m-%d")

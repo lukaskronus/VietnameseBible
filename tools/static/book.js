@@ -1,54 +1,4 @@
 "use strict";
-function esc(s) {
-  return s
-    .replace(/&/g, "&amp;")
-    .replace(/</g, "&lt;")
-    .replace(/>/g, "&gt;")
-    .replace(/"/g, "&quot;");
-}
-function base() {
-  var b = document.querySelector('meta[name="kt-base"]');
-  return b ? b.content : "";
-}
-function biTitle(vi, en) {
-  var t = vi.book + " " + vi.n;
-  if (en.book) t += " · " + en.book + " " + en.n;
-  return t;
-}
-function renderPair(viBlocks, enBlocks) {
-  var mVi = {};
-  var mEn = {};
-  var i;
-  for (i = 0; i < viBlocks.length; i++) mVi[viBlocks[i].n] = viBlocks[i].x || "";
-  for (i = 0; i < enBlocks.length; i++) mEn[enBlocks[i].n] = enBlocks[i].x || "";
-  var seen = {};
-  var keys = [];
-  function collect(blocks) {
-    for (var j = 0; j < blocks.length; j++) {
-      var n = blocks[j].n;
-      if (!seen[n]) {
-        seen[n] = 1;
-        keys.push(n);
-      }
-    }
-  }
-  collect(viBlocks);
-  collect(enBlocks);
-  keys.sort(function (x, y) {
-    return x - y;
-  });
-  var h = "";
-  for (i = 0; i < keys.length; i++) {
-    var n = keys[i];
-    var vv = mVi[n] || "";
-    var ee = mEn[n] || "";
-    if (!vv && !ee) continue;
-    h += '<div class="verse-pair"><p class="reading vi"><sup>' + n + "</sup>" + esc(vv) + "</p>";
-    if (ee) h += '<p class="reading en" lang="en"><sup>' + n + "</sup>" + esc(ee) + "</p>";
-    h += "</div>";
-  }
-  return h;
-}
 function markActive(n) {
   var ls = document.querySelectorAll(".chap-bar a");
   for (var i = 0; i < ls.length; i++) {
@@ -67,7 +17,7 @@ function loadChapter(cid, push) {
   var box = document.getElementById("bk-content");
   if (!box) return;
   var p = window.ktPair.get();
-  var bp = base();
+  var bp = ktBase();
   box.innerHTML = "<p>Đang tải…</p>";
   Promise.all([
     fetch(bp + "/data/tr/" + p.vi + "/ch/" + cid + ".json").then(function (r) {
@@ -82,12 +32,12 @@ function loadChapter(cid, push) {
     .then(function (pair) {
       var vi = pair[0];
       var en = pair[1];
-      box.innerHTML = renderPair(vi.blocks, en.blocks);
-      document.getElementById("bk-ch-title").textContent = biTitle(vi, en);
+      box.innerHTML = ktMergePair(vi.blocks, en.blocks);
+      document.getElementById("bk-ch-title").textContent = ktBiTitle(vi, en);
       var site = "";
       var lay = document.querySelector(".book-layout");
       if (lay) site = lay.getAttribute("data-site") || "";
-      document.title = biTitle(vi, en) + (site ? " | " + site : "");
+      document.title = ktBiTitle(vi, en) + (site ? " | " + site : "");
       markActive(vi.n);
       if (push !== false) {
         try {

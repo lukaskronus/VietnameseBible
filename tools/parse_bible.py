@@ -52,6 +52,15 @@ from datetime import datetime, timezone
 # Legacy row count of data/bible.sql, used as an informational cross-check only.
 LEGACY_CHAPTER_COUNT = 1189
 
+# Canon chapter counts, books 1..66. A book that parses fewer chapters than
+# canon is missing content (fatal); more than canon is an edition difference
+# (warning). Shared with parse_web.py so both pipelines apply the same rule.
+CANON_CHAPTERS = (
+    50, 40, 27, 36, 34, 24, 21, 4, 31, 24, 22, 25, 29, 36, 10, 13, 10, 42,
+    150, 31, 12, 8, 66, 52, 5, 48, 12, 14, 3, 9, 1, 4, 7, 3, 3, 3, 2, 14,
+    4, 28, 16, 24, 21, 28, 16, 16, 13, 6, 6, 4, 4, 5, 3, 6, 4, 3, 1, 13,
+    5, 5, 3, 5, 1, 1, 1, 22)
+
 TESTAMENT_LABELS = {"OT": "Cựu Ước", "NT": "Tân Ước"}
 
 DEFAULT_VI = "vi1925"
@@ -179,6 +188,19 @@ def parse_xml(path, warnings):
     return verses, header
 
 
+def check_canon(books, errors, warnings):
+    """Flag chapter counts that differ from canon (short is fatal)."""
+    for book in books:
+        expected = CANON_CHAPTERS[book["position"] - 1]
+        got = len(book["chapters"])
+        if got < expected:
+            errors.append("%s: %d chapters parsed, canon has %d"
+                          % (book["code"], got, expected))
+        elif got > expected:
+            warnings.append("%s: %d chapters parsed, canon has %d"
+                            % (book["code"], got, expected))
+
+
 def main():
     ap = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     ap.add_argument("--data", default="data/xml",
@@ -298,6 +320,8 @@ def main():
                             book["testament"], len(book["chapters"]), n_v,
                             "ok"))
 
+    check_canon(books, errors, warnings)
+
     if not books or n_chapters == 0 or total_verses == 0:
         errors.append("no books/chapters/verses parsed")
     if errors:
@@ -313,7 +337,6 @@ def main():
             "books": len(books),
             "total_chapters": n_chapters,
             "total_verses": total_verses,
-            "total_headings": 0,
             "testaments": TESTAMENT_LABELS,
             "translations": tr_meta,
             "default_vi": DEFAULT_VI,

@@ -60,7 +60,8 @@ OSIS = ("Gen Exod Lev Num Deut Josh Judg Ruth 1Sam 2Sam 1Kgs 2Kgs 1Chr "
 
 # Book titles live only in parse_bible.py (AGENTS.md).  Import them so the
 # web_version parser uses the same canonical names as the portable-site parser.
-from parse_bible import VI_TITLES, EN_TITLES, TESTAMENT_LABELS
+from parse_bible import (VI_TITLES, EN_TITLES, TESTAMENT_LABELS,
+                         check_canon)
 
 WS_RE = re.compile(r"\s+")
 
@@ -191,9 +192,11 @@ def parse_usfx_file(path, warnings):
                     walk(child)
                     if child.tail and state['vn'] is not None:
                         state['buf'].append(child.tail)
-                except Exception:
-                    # Skip problematic child elements but continue parsing
-                    pass
+                except Exception as e:
+                    # Skip the bad child but keep the skip visible: a silent
+                    # pass can drop verse text without failing the build.
+                    warnings.append("%s: skipped element in book %d: %s"
+                                    % (os.path.basename(path), bn, e))
 
         walk(book)
         flush()
@@ -419,6 +422,8 @@ def main():
             book["chapters"].append({"number": cn, "blocks": blocks})
         books.append(book)
 
+    check_canon(books, errors, warnings)
+
     if not books or n_chapters == 0 or total_verses == 0:
         errors.append("no books/chapters/verses parsed")
     if errors:
@@ -434,7 +439,6 @@ def main():
             "books": len(books),
             "total_chapters": n_chapters,
             "total_verses": total_verses,
-            "total_headings": 0,
             "testaments": TESTAMENT_LABELS,
             "translations": tr_meta,
             "default_vi": DEFAULT_VI,

@@ -43,6 +43,14 @@ jobs:
         with:
           python-version: "3.12"
 
+      - name: Check search-fold parity (Python vs JS)
+        # Both sides of the search folding must agree, or Vietnamese search
+        # silently returns nothing. node ships on ubuntu-latest.
+        run: |
+          python tools/check_fold.py > py.txt
+          node tools/check_fold.js > js.txt
+          diff -u py.txt js.txt
+
       - name: Parse web_version sources (public domain)
         run: python tools/parse_web.py --data data/web_version --out build
 

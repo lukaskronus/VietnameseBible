@@ -66,6 +66,14 @@ jobs:
           name: bible-parse
           path: parse-in
 
+      - name: Check search-fold parity (Python vs JS)
+        # Both sides of the search folding must agree, or Vietnamese search
+        # silently returns nothing. node ships on ubuntu-latest.
+        run: |
+          python tools/check_fold.py > py.txt
+          node tools/check_fold.js > js.txt
+          diff -u py.txt js.txt
+
       - name: Build SQLite + search index
         # Fails on any inconsistency (incl. FTS self-check mismatch).
         run: python tools/build_db.py --json parse-in/bible.json --out build

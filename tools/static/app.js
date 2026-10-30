@@ -6,6 +6,71 @@ function ktGet(id) {
   return document.getElementById(id);
 }
 
+/* Helpers shared by book.js, daily.js and search.js. app.js loads first on
+   every page, so these globals exist before those scripts run. */
+function ktEsc(s) {
+  return s
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;");
+}
+
+function ktEscAttr(s) {
+  return s
+    .replace(/&/g, "&amp;")
+    .replace(/"/g, "&quot;");
+}
+
+function ktBase() {
+  var b = document.querySelector('meta[name="kt-base"]');
+  return b ? b.content : "";
+}
+
+function ktBiTitle(vi, en) {
+  var t = vi.book + " " + vi.n;
+  if (en.book) t += " · " + en.book + " " + en.n;
+  return t;
+}
+
+/* Merge one VI chapter file with one EN chapter file. Verse numbers are
+   unioned; a verse empty on both sides is skipped. */
+function ktMergePair(viBlocks, enBlocks) {
+  var mVi = {};
+  var mEn = {};
+  var seen = {};
+  var keys = [];
+  var i;
+  function collect(blocks, map) {
+    for (var j = 0; j < blocks.length; j++) {
+      var n = blocks[j].n;
+      map[n] = blocks[j].x || "";
+      if (!seen[n]) {
+        seen[n] = 1;
+        keys.push(n);
+      }
+    }
+  }
+  collect(viBlocks, mVi);
+  collect(enBlocks, mEn);
+  keys.sort(function (a, b) {
+    return a - b;
+  });
+  var h = "";
+  for (i = 0; i < keys.length; i++) {
+    var n = keys[i];
+    var vv = mVi[n] || "";
+    var ee = mEn[n] || "";
+    if (!vv && !ee) continue;
+    h += '<div class="verse-pair"><p class="reading vi"><sup>' + n +
+      "</sup>" + ktEsc(vv) + "</p>";
+    if (ee) h += '<p class="reading en" lang="en"><sup>' + n + "</sup>" +
+      ktEsc(ee) + "</p>";
+    h += "</div>";
+  }
+  return h;
+}
+
 /* Theme toggle */
 var themeBtn = ktGet("theme-btn");
 function ktUpdateThemeBtn() {

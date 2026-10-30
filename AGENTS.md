@@ -87,9 +87,10 @@ weekly and on manual dispatch.
   `EN_TITLES`, `OSIS`); the XML stores numbers 1–66 only. Slugs derive from the
   Vietnamese titles via `slugify()`, so renaming a book changes its URLs.
 - **Search folding** must match between `fold`/`tokenize` in
-  `tools/build_db.py` and `fold`/`toks` in `tools/static/search.js`: NFD, strip
+  `tools/build_db.py` and `fold`/`toks` in `tools/static/fold.js`: NFD, strip
   combining marks, `đ/Đ/ð/Ð → d/D`, lowercase, `[a-z0-9]+` runs, tokens of at
-  least 2 chars.
+  least 2 chars. CI diffs `tools/check_fold.py` against `tools/check_fold.js`
+  (shared fixture `tools/fold_cases.json`), so a divergence fails the build.
 - **No translation codes in `tools/static/*.js`.** The default pair comes from
   the server-rendered `<option selected>` in the picker: `pair.js` reads it into
   `DEF_VI`/`DEF_EN`, and `book.js`/`daily.js` get the pair from `window.ktPair`,
