@@ -23,6 +23,17 @@ function toks(s) {
   });
 }
 
+/* FNV-1a 32-bit of an ASCII key, modulo the manifest's shard_count. Must
+   stay equal to shard_id() in tools/build_db.py; CI diffs both. */
+function shardId(key, count) {
+  var h = 2166136261;
+  for (var i = 0; i < key.length; i++) {
+    h ^= key.charCodeAt(i);
+    h = Math.imul(h, 16777619) >>> 0;
+  }
+  return h % count;
+}
+
 if (typeof module !== "undefined" && module.exports) {
-  module.exports = { fold: fold, toks: toks };
+  module.exports = { fold: fold, toks: toks, shardId: shardId };
 }

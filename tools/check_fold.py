@@ -16,7 +16,7 @@ import sys
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
-from build_db import fold, tokenize  # noqa: E402
+from build_db import fold, shard_id, tokenize  # noqa: E402
 
 CASES = os.path.join(os.path.dirname(os.path.abspath(__file__)),
                      "fold_cases.json")
@@ -26,7 +26,12 @@ def main():
     with open(CASES, encoding="utf-8") as f:
         cases = json.load(f)
     for case in cases:
-        print(" ".join(tokenize(fold(case))))
+        toks = tokenize(fold(case))
+        print(" ".join(toks))
+        # Shard routing must agree too, or the client fetches the wrong file.
+        print(" ".join(str(shard_id(t)) for t in toks))
+        print(" ".join(str(shard_id(toks[i] + " " + toks[i + 1]))
+                       for i in range(len(toks) - 1)))
     return 0
 
 

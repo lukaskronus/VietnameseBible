@@ -32,7 +32,7 @@ python tools/parse_web.py --data data/web_version --out build
 
 # shared
 python tools/build_db.py --json build/bible.json --out build
-python tools/build_site.py --json build/bible.json --index build/search_index.json \
+python tools/build_site.py --json build/bible.json --index build/search \
   --out site --base-url "$SITE_BASE_URL" --base-path "$SITE_BASE_PATH"
 ```
 
@@ -86,11 +86,18 @@ weekly and on manual dispatch.
 - **Book titles** live only in `tools/parse_bible.py` (`VI_TITLES`,
   `EN_TITLES`, `OSIS`); the XML stores numbers 1–66 only. Slugs derive from the
   Vietnamese titles via `slugify()`, so renaming a book changes its URLs.
-- **Search folding** must match between `fold`/`tokenize` in
-  `tools/build_db.py` and `fold`/`toks` in `tools/static/fold.js`: NFD, strip
-  combining marks, `đ/Đ/ð/Ð → d/D`, lowercase, `[a-z0-9]+` runs, tokens of at
-  least 2 chars. CI diffs `tools/check_fold.py` against `tools/check_fold.js`
+- **Search folding** must match between `fold`/`tokenize`/`shard_id` in
+  `tools/build_db.py` and `fold`/`toks`/`shardId` in `tools/static/fold.js`:
+  NFD, strip combining marks, `đ/Đ/ð/Ð → d/D`, lowercase, `[a-z0-9]+` runs,
+  tokens of at least 2 chars; keys hash to shards with FNV-1a 32-bit modulo
+  `SHARD_COUNT`. CI diffs `tools/check_fold.py` against `tools/check_fold.js`
   (shared fixture `tools/fold_cases.json`), so a divergence fails the build.
+- **Search matches adjacent word pairs, not loose words.** A query of 2+ tokens
+  looks up each adjacent pair (`tinh yeu thuong` → `tinh yeu` OR `yeu thuong`)
+  and unions the results. Shards live in `data/search/`: a word or pair maps to
+  base64 LEB128-delta verse codes, `code = chapter_id * 1000 + verse_number`.
+  Results are verse references linked to `#c<chapter>v<verse>` anchors. Only
+  the default pair is indexed.
 - **No translation codes in `tools/static/*.js`.** The default pair comes from
   the server-rendered `<option selected>` in the picker: `pair.js` reads it into
   `DEF_VI`/`DEF_EN`, and `book.js`/`daily.js` get the pair from `window.ktPair`,

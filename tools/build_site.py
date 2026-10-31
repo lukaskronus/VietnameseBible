@@ -3,10 +3,10 @@
 
 Stdlib only.
     python tools/build_site.py --json build/bible.json \
-        --index build/search_index.json --out site \
+        --index build/search --out site \
         --base-url https://example.com/ [--base-path ""]
 
-Inputs: Phase 1 bible.json (bilingual text + order), Phase 2 search_index.json.
+Inputs: Phase 1 bible.json (bilingual text + order), Phase 2 search/ shards.
 Output: complete static site/ and site.zip -- upload to any static host.
 
 URL scheme: / = home (pair-switchable verse of the day + book grid),
@@ -88,7 +88,8 @@ def write(path, content):
 def main():
     ap = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     ap.add_argument("--json", required=True, help="Phase 1 bible.json")
-    ap.add_argument("--index", required=True, help="Phase 2 search_index.json")
+    ap.add_argument("--index", required=True,
+                    help="Phase 2 search/ shard directory")
     ap.add_argument("--out", default="site", help="output directory (CI only)")
     ap.add_argument("--base-url", default="https://example.com/",
                     help="absolute site URL, used for sitemap.xml")
@@ -96,10 +97,13 @@ def main():
                     help="subpath prefix if not served from domain root")
     args = ap.parse_args()
 
-    for p in (args.json, args.index):
-        if not os.path.isfile(p):
-            print("error: %s not found" % p, file=sys.stderr)
-            return 1
+    if not os.path.isfile(args.json):
+        print("error: %s not found" % args.json, file=sys.stderr)
+        return 1
+    if not os.path.isdir(args.index):
+        print("error: %s not found (Phase 2 search shards)"
+              % args.index, file=sys.stderr)
+        return 1
     with open(args.json, encoding="utf-8") as f:
         payload = json.load(f)
     books = payload.get("books")
@@ -254,8 +258,10 @@ def main():
     # Favicon (SVG at root, referenced by <link> in template)
     favicon_src = (STATIC_DIR / "favicon.svg").read_text("utf-8")
     write(os.path.join(out, "favicon.svg"), favicon_src)
-    with open(args.index, encoding="utf-8") as f:
-        write(os.path.join(out, "data", "search_index.json"), f.read())
+    # Phase 2 search shards are already static JSON; copy them verbatim.
+    for name in sorted(os.listdir(args.index)):
+        with open(os.path.join(args.index, name), encoding="utf-8") as f:
+            write(os.path.join(out, "data", "search", name), f.read())
     write(os.path.join(out, "data", "chapters.json"),
           json.dumps([{"id": i + 1, "slug": c["slug"], "n": c["n"],
                        "book": c["book"], "book_en": c.get("book_en", "")}

@@ -43,9 +43,10 @@ jobs:
         with:
           python-version: "3.12"
 
-      - name: Check search-fold parity (Python vs JS)
-        # Both sides of the search folding must agree, or Vietnamese search
-        # silently returns nothing. node ships on ubuntu-latest.
+      - name: Check search folding + shard parity (Python vs JS)
+        # Both sides of the search folding and shard routing must agree, or
+        # Vietnamese search silently returns nothing. node ships on
+        # ubuntu-latest.
         run: |
           python tools/check_fold.py > py.txt
           node tools/check_fold.js > js.txt
@@ -61,7 +62,7 @@ jobs:
         run: >
           python tools/build_site.py
           --json build/bible.json
-          --index build/search_index.json
+          --index build/search
           --out site
           --base-url "${{ env.SITE_BASE_URL }}"
           --base-path "${{ env.SITE_BASE_PATH }}"

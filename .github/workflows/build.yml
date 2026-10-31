@@ -1,6 +1,6 @@
 # Phase 1: parse data/xml/*.xml -> build/bible.json + build/validation_report.md
-# Phase 2: build_db (bible.json -> bible.sqlite + search_index.json)
-# Phase 3: build_site (bible.json + search_index.json -> static site/ + site.zip)
+# Phase 2: build_db (bible.json -> bible.sqlite + search/ shards)
+# Phase 3: build_site (bible.json + search/ shards -> static site/ + site.zip)
 #
 # Manual dispatch only. This produces portable site artifacts (site + site.zip)
 # from licensed translations in data/xml/. Wasmer deployment (public domain
@@ -66,9 +66,10 @@ jobs:
           name: bible-parse
           path: parse-in
 
-      - name: Check search-fold parity (Python vs JS)
-        # Both sides of the search folding must agree, or Vietnamese search
-        # silently returns nothing. node ships on ubuntu-latest.
+      - name: Check search folding + shard parity (Python vs JS)
+        # Both sides of the search folding and shard routing must agree, or
+        # Vietnamese search silently returns nothing. node ships on
+        # ubuntu-latest.
         run: |
           python tools/check_fold.py > py.txt
           node tools/check_fold.js > js.txt
@@ -84,7 +85,7 @@ jobs:
           name: bible-db
           path: |
             build/bible.sqlite
-            build/search_index.json
+            build/search
           retention-days: 30
 
   build_site:
@@ -119,7 +120,7 @@ jobs:
         run: >
           python tools/build_site.py
           --json parse-in/bible.json
-          --index db-in/search_index.json
+          --index db-in/search
           --out site
           --base-url "${{ vars.SITE_BASE_URL }}"
           --base-path "${{ vars.SITE_BASE_PATH }}"

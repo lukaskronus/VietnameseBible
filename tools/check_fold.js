@@ -13,5 +13,14 @@ const cases = JSON.parse(
 );
 
 for (const c of cases) {
-  process.stdout.write(foldjs.toks(foldjs.fold(c)).join(" ") + "\n");
+  const toks = foldjs.toks(foldjs.fold(c));
+  process.stdout.write(toks.join(" ") + "\n");
+  // Shard routing must agree with tools/build_db.py too.
+  process.stdout.write(
+    toks.map((t) => foldjs.shardId(t, 256)).join(" ") + "\n");
+  process.stdout.write(
+    toks
+      .slice(1)
+      .map((t, i) => foldjs.shardId(toks[i] + " " + t, 256))
+      .join(" ") + "\n");
 }
